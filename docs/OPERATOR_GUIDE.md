@@ -81,7 +81,7 @@ npm run restore -- --from backups/<文件>.zip --confirm RESTORE-BUDGET-MAP
 
 ## 阶段 5 局域网测试准备
 
-真实数据采集和真人测试尚未执行。准备完成后，按 [阶段 5 测试指南](PHASE5_TEST_GUIDE.md) 先准备并独立核验 20–30 份真实餐食，再确认是否开测；演示 seed 不计入数量。
+真实数据采集和真人测试尚未执行。准备完成后，先按 [阶段 5 交接手册](PHASE5_RUNBOOK.md) 走真实数据进入与隔离演练，再按 [阶段 5 测试指南](PHASE5_TEST_GUIDE.md) 准备并独立核验 20–30 份真实餐食，最后才确认是否开测；演示 seed 不计入数量。
 
 需要局域网演练时运行：
 

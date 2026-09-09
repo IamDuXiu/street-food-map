@@ -129,8 +129,13 @@ describe('candidate pool', () => {
         status: 409,
       }),
     );
+    const draftCount = () =>
+      (db.prepare('SELECT count(*) c FROM lead_conversion_drafts WHERE id=?').get(draft.id) as { c: number }).c;
+    expect(draftCount()).toBe(1);
     const result = commitCandidateDraft(db, { draftId: draft.id, version: draft.version });
     expect(result.createdPlaceIds).toHaveLength(1);
+    expect(result.deletedDraftId).toBe(draft.id);
+    expect(draftCount()).toBe(0);
     expect(result.createdMenuItemIds).toHaveLength(items.length);
     expect((db.prepare('SELECT count(*) c FROM source_lead_items WHERE source_lead_id=? AND status=\'converted\'').get(items[0] && (db.prepare('SELECT source_lead_id FROM source_lead_items WHERE id=?').get(items[0].id) as { source_lead_id: string }).source_lead_id) as { c: number }).c).toBe(items.length);
   });

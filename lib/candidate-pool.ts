@@ -1554,7 +1554,10 @@ export function commitCandidateDraft(
           { currentVersion: currentSourceVersion },
         );
     }
-    return commitCandidatePlan(db, payload, actor);
+    const result = commitCandidatePlan(db, payload, actor);
+    if (draft)
+      db.prepare('DELETE FROM lead_conversion_drafts WHERE id=?').run(draft.id);
+    return { ...result, deletedDraftId: draft?.id ?? null };
   })();
 }
 
