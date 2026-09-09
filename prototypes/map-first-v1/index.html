@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>饭签 · 深圳餐饮地图（原型演示）</title>
+  <style>
+    :root {
+      --ink: #1f2022;
+      --muted: #737579;
+      --faint: #9a9b9d;
+      --line: #e7e7e5;
+      --surface: #fff;
+      --paper: #f7f7f5;
+      --map: #edf0ee;
+      --building: #dfe3e0;
+      --road: #fbfbfa;
+      --park: #dce8df;
+      --metro: #c3cfca;
+      --coral: #ef806c;
+      --coral-ink: #b74d3f;
+      --shadow: 0 16px 44px rgba(31, 32, 34, .12);
+      --radius: 16px;
+      --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--surface); color: var(--ink); font-family: var(--font); }
+    body { overflow: hidden; }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .app { height: 100dvh; display: flex; flex-direction: column; }
+    header { flex: 0 0 auto; padding: 15px 22px 12px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.98); position: relative; z-index: 20; }
+    .topbar { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; gap: 18px; }
+    .brand { display: inline-flex; align-items: center; gap: 9px; min-width: 114px; border: 0; background: transparent; padding: 0; cursor: pointer; font-weight: 760; letter-spacing: -.03em; }
+    .brand-mark { width: 26px; height: 26px; border-radius: 9px 9px 9px 3px; background: var(--coral); display: grid; place-items: center; color: white; font-size: 9px; line-height: 1; font-weight: 850; letter-spacing: 0; }
+    .brand-name { font-size: 17px; }
+    .brand-note { color: var(--faint); font-size: 10px; font-weight: 600; letter-spacing: .04em; display: block; margin-top: 1px; }
+    .location-trigger { border: 0; background: transparent; display: flex; align-items: center; gap: 7px; padding: 8px 9px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+    .location-trigger:hover, .location-trigger:focus-visible { background: var(--paper); outline: none; }
+    .location-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px #fff2ef; }
+    .location-copy { text-align: left; line-height: 1.18; }
+    .location-city { display: block; font-size: 13px; font-weight: 730; }
+    .location-area { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+    .chevron { color: var(--faint); font-size: 15px; margin-left: 1px; }
+    .search-shell { margin-left: auto; width: min(430px, 38vw); height: 40px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); transition: border-color .2s, box-shadow .2s; }
+    .search-shell:focus-within { border-color: #bababa; box-shadow: 0 0 0 3px #f1f1ef; }
+    .search-icon { width: 16px; height: 16px; margin-left: 15px; color: #818285; }
+    .search-input { flex: 1; min-width: 0; padding: 0 9px; border: 0; outline: 0; background: transparent; font-size: 13px; }
+    .clear-search { width: 30px; height: 30px; margin-right: 5px; border: 0; border-radius: 50%; background: transparent; color: #8d8f91; cursor: pointer; display: none; }
+    .clear-search.show { display: block; }
+    .header-reset { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 9px; background: white; font-size: 12px; padding: 8px 10px; cursor: pointer; color: var(--muted); }
+    .header-reset:hover { border-color: #bdbdbd; color: var(--ink); }
+    .filterbar { max-width: 1440px; margin: 10px auto 0; display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .filterbar::-webkit-scrollbar { display: none; }
+    .filter-label { color: var(--faint); font-size: 11px; margin-right: 2px; white-space: nowrap; }
+    .pill { height: 31px; padding: 0 12px; border: 1px solid var(--line); background: #fff; border-radius: 99px; cursor: pointer; white-space: nowrap; font-size: 12px; transition: background .18s, color .18s, border .18s, transform .18s; }
+    .pill:hover { border-color: #bcbdbf; transform: translateY(-1px); }
+    .pill.is-selected { border-color: var(--ink); background: var(--ink); color: #fff; }
+    .pill .sub { color: var(--muted); margin-left: 2px; }
+    .pill.is-selected .sub { color: #d6d6d6; }
+    .filter-divider { width: 1px; height: 19px; background: var(--line); margin: 0 3px; }
+    .sort-wrap { margin-left: auto; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .sort-label { font-size: 11px; color: var(--faint); }
+    .sort-select { border: 0; background: transparent; font-size: 12px; font-weight: 650; color: var(--ink); cursor: pointer; outline: 0; }
+    .workspace { min-height: 0; flex: 1; display: grid; grid-template-columns: minmax(320px, 370px) minmax(0, 1fr); }
+    .list-pane { min-height: 0; border-right: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column; z-index: 8; }
+    .list-head { padding: 18px 20px 13px; display: flex; align-items: end; justify-content: space-between; gap: 10px; }
+    .list-title { font-size: 16px; font-weight: 760; letter-spacing: -.02em; }
+    .list-caption { color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .result-count { color: var(--faint); font-size: 11px; white-space: nowrap; }
+    .cards { min-height: 0; overflow-y: auto; padding: 0 12px 28px; }
+    .place-card { position: relative; border: 1px solid transparent; border-radius: 13px; padding: 14px 12px 13px; margin-bottom: 6px; cursor: pointer; transition: background .18s, border-color .18s, box-shadow .18s; }
+    .place-card:hover { background: #fafafa; }
+    .place-card.is-active { background: #f7f7f5; border-color: #dededb; box-shadow: 0 0 0 1px #e2e2df; }
+    .card-top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+    .meal-name { font-size: 16px; font-weight: 760; letter-spacing: -.02em; line-height: 1.25; }
+    .price-pill { background: #fff; border: 1px solid var(--ink); color: var(--ink); border-radius: 99px; padding: 4px 9px; font-size: 12px; line-height: 1; font-weight: 780; white-space: nowrap; }
+    .place-card.is-active .price-pill { background: var(--ink); color: white; }
+    .store-line { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .store-line .distance { color: var(--ink); font-weight: 680; }
+    .store-line .sep { color: #c1c1c1; }
+    .card-bottom { margin-top: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--faint); font-size: 11px; }
+    .access-tag { color: var(--muted); background: #f0f1ef; padding: 3px 6px; border-radius: 5px; }
+    .verified { white-space: nowrap; }
+    .card-fav { position: absolute; top: 43px; right: 12px; border: 0; background: transparent; color: #b2b3b4; cursor: pointer; padding: 4px; font-size: 17px; line-height: 1; }
+    .card-fav.is-loved { color: var(--coral); }
+    .empty-list { margin: 18px 10px; padding: 28px 18px; border: 1px dashed #cfd1cf; border-radius: 13px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .empty-list strong { color: var(--ink); display: block; font-size: 14px; margin-bottom: 3px; }
+    .map-pane { position: relative; min-width: 0; overflow: hidden; background: var(--map); }
+    .map-stage { position: absolute; inset: 0; overflow: hidden; }
+    .map-svg { width: 100%; height: 100%; display: block; background: var(--map); cursor: default; transition: transform .25s ease; transform-origin: 50% 50%; }
+    .html-markers { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+    .html-marker { position: absolute; width: 54px; height: 35px; transform: translate(-50%, -50%); display: grid; place-items: center; border: 1px solid #242526; border-radius: 18px; background: #fff; color: #222; box-shadow: 0 2px 5px rgba(31,32,34,.22); font-size: 14px; line-height: 1; font-weight: 800; cursor: pointer; pointer-events: auto; }
+    .html-marker.is-active { background: #222; color: #fff; border-color: #222; }
+    .html-marker:focus-visible { outline: 3px solid rgba(31,32,34,.25); outline-offset: 2px; }
+    .map-grid { stroke: #e1e6e2; stroke-width: 1; }
+    .road { fill: none; stroke: var(--road); stroke-width: 22; stroke-linecap: round; }
+    .road-line { fill: none; stroke: #dfe3e0; stroke-width: 1.4; stroke-linecap: round; }
+    .building { fill: var(--building); stroke: #d5dcd7; stroke-width: 1; }
+    .building-dark { fill: #d8ded9; }
+    .park { fill: var(--park); stroke: #cbdccf; stroke-width: 1; }
+    .map-label { fill: #9ba8a0; font-size: 12px; letter-spacing: .08em; }
+    .map-label.strong { fill: #7c8d82; font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+    .metro-line { fill: none; stroke: var(--metro); stroke-width: 3; stroke-dasharray: 4 5; }
+    .map-control { position: absolute; top: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 4; }
+    .map-control button, .map-locate { width: 38px; height: 38px; border: 1px solid #dedfdd; background: rgba(255,255,255,.94); border-radius: 11px; box-shadow: 0 4px 12px rgba(50,60,55,.08); cursor: pointer; font-size: 19px; display: grid; place-items: center; }
+    .map-control button:hover, .map-locate:hover { background: white; border-color: #bfc2bf; }
+    .map-control .zoom-level { font-size: 10px; color: var(--muted); height: 22px; border: 0; box-shadow: none; cursor: default; background: transparent; }
+    .map-locate { position: absolute; right: 18px; bottom: 22px; z-index: 4; font-size: 15px; }
+    .map-locate::before { content: ""; width: 10px; height: 10px; border: 1.5px solid #656e69; border-radius: 50%; }
+    .map-note { position: absolute; left: 18px; bottom: 18px; z-index: 3; color: #76807a; background: rgba(255,255,255,.82); border: 1px solid rgba(214,218,214,.85); border-radius: 8px; padding: 7px 9px; font-size: 10px; line-height: 1.45; }
+    .map-note b { color: #4d5750; font-weight: 700; }
+    .map-marker { cursor: pointer; opacity: 0; pointer-events: none; }
+    .map-marker:hover .marker-pin { stroke-width: 3.5; }
+    .marker-pin { fill: var(--ink); stroke: white; stroke-width: 2.5; }
+    .map-marker.is-active .marker-pin { fill: var(--ink); }
+    .marker-price { fill: white; font-size: 10px; font-weight: 800; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+    .you-are-here { fill: #8c9990; stroke: white; stroke-width: 2; }
+    .selected-card { position: absolute; left: 22px; bottom: 22px; width: min(340px, calc(100% - 52px)); z-index: 5; background: rgba(255,255,255,.98); border: 1px solid #dededb; border-radius: 15px; box-shadow: var(--shadow); padding: 15px 16px; cursor: pointer; }
+    .selected-card .meal-name { padding-right: 62px; }
+    .selected-card .selected-meta { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: var(--muted); font-size: 12px; }
+    .selected-card .selected-foot { display: flex; gap: 6px; align-items: center; margin-top: 11px; color: var(--faint); font-size: 11px; }
+    .selected-card .selected-foot .access-tag { font-size: 10px; }
+    .selected-open { margin-left: auto; border: 1px solid var(--line); background: #fff; border-radius: 7px; color: var(--ink); padding: 5px 7px; font-size: 10px; cursor: pointer; white-space: nowrap; }
+    .mobile-sheet-actions { display: none; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(25,28,27,.27); display: none; align-items: stretch; justify-content: flex-end; }
+    .modal-backdrop.is-open { display: flex; }
+    .region-modal { width: min(720px, 100%); background: #fff; height: 100%; box-shadow: -14px 0 45px rgba(28,31,29,.14); display: flex; flex-direction: column; animation: slide-in .2s ease both; }
+    @keyframes slide-in { from { transform: translateX(22px); opacity: .5; } to { transform: translateX(0); opacity: 1; } }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 24px 17px; border-bottom: 1px solid var(--line); }
+    .modal-kicker { color: var(--coral-ink); font-size: 11px; font-weight: 730; letter-spacing: .05em; }
+    .modal-title { font-size: 21px; font-weight: 780; margin-top: 5px; letter-spacing: -.03em; }
+    .modal-close { border: 0; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; }
+    .modal-close:hover { background: var(--paper); }
+    .region-headline { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px 10px; }
+    .region-city { font-size: 13px; font-weight: 760; }
+    .region-demo { font-size: 10px; color: var(--faint); }
+    .region-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: 205px minmax(0,1fr); }
+    .region-nav { border-right: 1px solid var(--line); padding: 0 10px 20px 14px; overflow-y: auto; }
+    .region-nav button { display: block; width: 100%; text-align: left; border: 0; background: transparent; border-radius: 9px; padding: 10px 11px; color: var(--muted); cursor: pointer; font-size: 12px; margin-bottom: 2px; }
+    .region-nav button:hover { background: var(--paper); color: var(--ink); }
+    .region-nav button.is-selected { background: #f1f1ef; color: var(--ink); font-weight: 740; box-shadow: inset 3px 0 var(--coral); }
+    .region-districts { padding: 0 22px 22px; overflow-y: auto; }
+    .district-heading { color: var(--faint); font-size: 11px; padding: 2px 0 11px; }
+    .district-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .district-btn { border: 1px solid var(--line); background: #fff; border-radius: 10px; text-align: left; padding: 12px; cursor: pointer; min-height: 58px; }
+    .district-btn:hover { border-color: #b8bab8; background: #fbfbfa; }
+    .district-btn strong { display: block; font-size: 12px; }
+    .district-btn span { display: block; color: var(--faint); font-size: 10px; margin-top: 4px; }
+    .district-empty { border: 1px dashed #d3d6d3; border-radius: 12px; padding: 24px 18px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+    .district-empty strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 3px; }
+    .district-back { border: 0; background: #f3f3f1; border-radius: 8px; padding: 9px 11px; color: var(--ink); cursor: pointer; font-size: 11px; margin-top: 13px; }
+    .detail-panel { position: fixed; z-index: 45; top: 0; right: 0; height: 100%; width: min(470px, 100%); background: white; box-shadow: -14px 0 46px rgba(25,28,27,.17); display: none; flex-direction: column; animation: slide-in .2s ease both; }
+    .detail-panel.is-open { display: flex; }
+    .detail-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .detail-back { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; padding: 5px 0; }
+    .detail-head .modal-close { margin-left: auto; }
+    .detail-body { overflow-y: auto; padding: 25px 25px 36px; }
+    .detail-price { display: inline-block; border: 1px solid var(--ink); border-radius: 99px; padding: 5px 10px; font-size: 12px; font-weight: 780; }
+    .detail-title { font-size: 28px; line-height: 1.2; letter-spacing: -.04em; margin: 15px 0 7px; }
+    .detail-store { color: var(--muted); font-size: 13px; }
+    .detail-facts { margin: 21px 0; display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .fact { padding: 13px 0; }
+    .fact + .fact { border-left: 1px solid var(--line); padding-left: 16px; }
+    .fact-label { display: block; color: var(--faint); font-size: 10px; margin-bottom: 5px; }
+    .fact-value { display: block; font-size: 13px; font-weight: 700; }
+    .detail-section { margin-top: 21px; }
+    .detail-section h3 { font-size: 12px; margin: 0 0 9px; color: var(--muted); font-weight: 760; }
+    .condition { border-left: 3px solid var(--coral); background: #fff6f2; padding: 11px 12px; font-size: 12px; line-height: 1.6; }
+    .other-meals { display: flex; flex-wrap: wrap; gap: 7px; }
+    .other-meal { border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; font-size: 11px; }
+    .other-meal b { margin-left: 7px; font-size: 12px; }
+    .evidence { border: 1px dashed #cfd2cf; border-radius: 10px; padding: 13px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 24px; }
+    .detail-action { height: 42px; border-radius: 10px; cursor: pointer; font-size: 12px; }
+    .detail-action.primary { background: var(--ink); color: #fff; border: 1px solid var(--ink); }
+    .detail-action.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    .toast { position: fixed; left: 50%; bottom: 22px; z-index: 90; transform: translate(-50%, 14px); background: var(--ink); color: #fff; border-radius: 9px; padding: 10px 14px; font-size: 12px; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; white-space: nowrap; }
+    .toast.is-visible { opacity: 1; transform: translate(-50%,0); }
+    @media (max-width: 760px) {
+      body { overflow: hidden; }
+      header { padding: 11px 14px 10px; }
+      .topbar { display: grid; grid-template-columns: auto 1fr auto; gap: 7px; }
+      .brand { min-width: 78px; gap: 6px; }
+      .brand-mark { width: 23px; height: 23px; border-radius: 8px 8px 8px 3px; font-size: 10px; }
+      .brand-name { font-size: 15px; }
+      .brand-note { display: none; }
+      .location-trigger { padding: 6px 4px; min-width: 0; }
+      .location-city { font-size: 12px; }
+      .location-area { overflow: hidden; text-overflow: ellipsis; max-width: 112px; white-space: nowrap; }
+      .search-shell { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 38px; }
+      .header-reset { font-size: 11px; padding: 7px 8px; }
+      .filterbar { margin-top: 9px; gap: 6px; padding-bottom: 1px; }
+      .filter-label { display: none; }
+      .pill { height: 29px; padding: 0 10px; font-size: 11px; }
+      .filter-divider { margin: 0 2px; }
+      .sort-wrap { margin-left: auto; }
+      .sort-label { display: none; }
+      .workspace { position: relative; display: block; }
+      .map-pane { position: absolute; inset: 0; }
+      .list-pane { position: absolute; z-index: 9; left: 0; right: 0; bottom: 0; height: 64px; border-right: 0; border-top: 1px solid #d8d9d6; border-radius: 18px 18px 0 0; box-shadow: 0 -10px 30px rgba(37,39,37,.1); transition: height .28s ease; overflow: hidden; }
+      .list-pane[data-sheet="half"] { height: 50%; }
+      .list-pane[data-sheet="full"] { height: calc(100% - 8px); }
+      .list-head { padding: 9px 15px 7px; display: block; position: relative; }
+      .list-head::before { content: ""; display: block; width: 33px; height: 4px; border-radius: 99px; background: #d3d3d0; margin: 0 auto 9px; }
+      .list-title { font-size: 14px; }
+      .list-caption { font-size: 10px; margin-top: 2px; }
+      .result-count { position: absolute; right: 15px; bottom: 10px; }
+      .mobile-sheet-actions { display: flex; position: absolute; top: 8px; right: 12px; gap: 5px; }
+      .mobile-sheet-actions button { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 4px 7px; font-size: 10px; cursor: pointer; }
+      .cards { padding: 0 9px 26px; }
+      .place-card { padding: 13px 11px; }
+      .map-control { top: 14px; right: 14px; }
+      .map-locate { right: 14px; bottom: 80px; }
+      .map-note { left: 13px; bottom: 79px; max-width: 162px; }
+      .selected-card { left: 14px; bottom: 77px; width: calc(100% - 70px); padding: 13px 13px; }
+      .detail-panel { width: 100%; }
+      .detail-body { padding: 22px 20px 32px; }
+      .region-modal { width: 100%; }
+      .modal-head { padding: 18px 18px 14px; }
+      .region-headline { padding-left: 18px; padding-right: 18px; }
+      .region-layout { grid-template-columns: 128px minmax(0,1fr); }
+      .region-nav { padding-left: 8px; padding-right: 7px; }
+      .region-nav button { padding: 9px 8px; font-size: 11px; }
+      .region-districts { padding: 0 15px 20px; }
+      .district-grid { grid-template-columns: 1fr; }
+      .district-btn { min-height: 52px; padding: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div class="topbar">
+        <button class="brand" id="brandReset" aria-label="饭签，重置演示">
+          <span class="brand-mark">饭签</span>
+          <span><span class="brand-name">饭签</span><span class="brand-note">深圳餐饮地图 · 原型</span></span>
+        </button>
+        <button class="location-trigger" id="locationTrigger" aria-haspopup="dialog" aria-expanded="false">
+          <span class="location-dot" aria-hidden="true"></span>
+          <span class="location-copy"><span class="location-city" id="locationCity">深圳市</span><span class="location-area" id="locationArea">南山 · 粤海科技园</span></span>
+          <span class="chevron" aria-hidden="true">⌄</span>
+        </button>
+        <label class="search-shell" aria-label="搜索店名、餐名或类别">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.7" cy="10.7" r="6.7"></circle><path d="m16 16 5 5"></path></svg>
+          <input id="searchInput" class="search-input" type="search" placeholder="搜索店名、餐名或类别" autocomplete="off" />
+          <button id="clearSearch" class="clear-search" type="button" aria-label="清空搜索">×</button>
+        </label>
+        <button id="headerReset" class="header-reset" type="button">重置演示</button>
+      </div>
+      <div class="filterbar" aria-label="筛选条件">
+        <span class="filter-label">单人餐</span>
+        <button class="pill budget-pill" data-budget="all" type="button">不限</button>
+        <button class="pill budget-pill" data-budget="15" type="button">≤ ¥15</button>
+        <button class="pill budget-pill" data-budget="20" type="button">≤ ¥20</button>
+        <button class="pill budget-pill" data-budget="25" type="button">≤ ¥25</button>
+        <span class="filter-divider" aria-hidden="true"></span>
+        <button class="pill category-pill is-selected" data-category="all" type="button">全部</button>
+        <button class="pill category-pill" data-category="粉面" type="button">粉面</button>
+        <button class="pill category-pill" data-category="快餐" type="button">快餐</button>
+        <button class="pill category-pill" data-category="简餐" type="button">简餐</button>
+        <div class="sort-wrap"><span class="sort-label">排序</span><select id="sortSelect" class="sort-select" aria-label="排序"><option value="nearest">最近</option><option value="price">最低价</option></select></div>
+      </div>
+    </header>
+    <main class="workspace">
+      <aside class="list-pane" id="listPane" data-sheet="collapsed" aria-label="餐食列表">
+        <div class="list-head">
+          <div class="list-title" id="listTitle">科技园附近的单人餐</div>
+          <div class="list-caption" id="listCaption">价格与核验信息均为原型演示数据</div>
+          <div class="result-count" id="resultCount">0 家示例</div>
+          <div class="mobile-sheet-actions" aria-label="移动端列表展开方式">
+            <button type="button" data-sheet-action="collapsed">地图</button>
+            <button type="button" data-sheet-action="half">半屏</button>
+            <button type="button" data-sheet-action="full">列表</button>
+          </div>
+        </div>
+        <div class="cards" id="cards"></div>
+      </aside>
+      <section class="map-pane" aria-label="示意地图">
+        <div class="map-stage">
+          <svg class="map-svg" id="mapSvg" viewBox="0 0 1000 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="南山粤海科技园示意地图">
+            <defs>
+              <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" class="map-grid" /></pattern>
+              <filter id="marker-shadow" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#222" flood-opacity=".18" /></filter>
+            </defs>
+            <rect width="1000" height="760" fill="#edf0ee" />
+            <rect width="1000" height="760" fill="url(#grid)" opacity=".45" />
+            <path class="park" d="M632 46h240c32 0 56 27 50 59l-19 105c-6 34-35 58-69 58H651c-22 0-40-18-40-40V91c0-25 8-45 21-45Z" />
+            <path class="park" d="M32 510h195c31 0 56 25 56 56v91c0 22-18 40-40 40H51c-21 0-38-17-38-38v-99c0-27 8-40 19-50Z" />
+            <path class="road" d="M-30 184 C205 171 412 194 1041 149" /><path class="road-line" d="M-30 184 C205 171 412 194 1041 149" />
+            <path class="road" d="M-40 408 C199 394 368 441 1040 371" /><path class="road-line" d="M-40 408 C199 394 368 441 1040 371" />
+            <path class="road" d="M-20 614 C206 593 535 648 1030 568" /><path class="road-line" d="M-20 614 C206 593 535 648 1030 568" />
+            <path class="road" d="M172 -20 C172 190 154 376 185 790" /><path class="road-line" d="M172 -20 C172 190 154 376 185 790" />
+            <path class="road" d="M426 -20 C420 205 453 429 410 790" /><path class="road-line" d="M426 -20 C420 205 453 429 410 790" />
+            <path class="road" d="M700 -30 C676 197 729 454 687 792" /><path class="road-line" d="M700 -30 C676 197 729 454 687 792" />
+            <path class="metro-line" d="M40 289 C212 270 376 290 512 271 C668 248 835 277 1019 251" />
+            <g opacity=".88">
+              <rect class="building" x="50" y="67" width="70" height="51" rx="3"/><rect class="building-dark" x="209" y="54" width="102" height="76" rx="3"/><rect class="building" x="337" y="57" width="65" height="84" rx="3"/><rect class="building" x="462" y="63" width="132" height="60" rx="3"/>
+              <rect class="building" x="55" y="248" width="78" height="102" rx="3"/><rect class="building-dark" x="218" y="230" width="99" height="93" rx="3"/><rect class="building" x="345" y="230" width="120" height="73" rx="3"/><rect class="building-dark" x="514" y="226" width="109" height="83" rx="3"/><rect class="building" x="755" y="234" width="113" height="65" rx="3"/>
+              <rect class="building" x="55" y="459" width="73" height="86" rx="3"/><rect class="building" x="231" y="469" width="123" height="82" rx="3"/><rect class="building-dark" x="452" y="451" width="107" height="89" rx="3"/><rect class="building" x="740" y="443" width="146" height="76" rx="3"/><rect class="building" x="773" y="612" width="87" height="67" rx="3"/>
+              <rect class="building-dark" x="76" y="679" width="81" height="53" rx="3"/><rect class="building" x="280" y="630" width="128" height="73" rx="3"/><rect class="building" x="482" y="647" width="94" height="75" rx="3"/>
+            </g>
+            <g class="map-labels"><text x="700" y="91" class="map-label strong">人才公园 · 示意</text><text x="73" y="646" class="map-label">粤海街道绿地</text><text x="273" y="178" class="map-label strong">粤海科技园</text><text x="750" y="337" class="map-label">科苑南路</text><text x="76" y="390" class="map-label">深南大道</text><text x="590" y="283" class="map-label">地铁线 · 示意</text></g>
+            <g id="mapMarkers"></g>
+            <g aria-label="模拟位置"><circle class="you-are-here" cx="501" cy="386" r="7"/><circle cx="501" cy="386" r="13" fill="none" stroke="#8c9990" stroke-opacity=".35" stroke-width="1.5"/><text x="515" y="390" class="map-label">模拟位置</text></g>
+          </svg>
+          <div class="html-markers" id="htmlMarkers" aria-label="餐食价格标记"></div>
+        </div>
+        <div class="map-control" aria-label="地图缩放控制"><button id="zoomIn" type="button" aria-label="放大地图">+</button><button id="zoomOut" type="button" aria-label="缩小地图">−</button><button id="resetMap" class="zoom-level" type="button" aria-label="重置地图缩放">100%</button></div>
+        <button class="map-locate" id="simulateLocation" type="button" aria-label="查看模拟位置" title="模拟位置，不请求定位"></button>
+        <div class="map-note"><b>原型演示</b><br />道路、餐食与地图位置均为示例，不代表真实营业或已核验。</div>
+        <article class="selected-card" id="selectedCard" tabindex="0" aria-label="打开选中餐食详情"></article>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="regionBackdrop" role="dialog" aria-modal="true" aria-labelledby="regionTitle">
+    <section class="region-modal">
+      <div class="modal-head"><div><div class="modal-kicker">区域入口</div><div class="modal-title" id="regionTitle">选择深圳的查看区域</div></div><button class="modal-close" id="closeRegion" type="button" aria-label="关闭区域选择">×</button></div>
+      <div class="region-headline"><div class="region-city">深圳市</div><div class="region-demo">仅改变原型里的示例结果</div></div>
+      <div class="region-layout"><nav class="region-nav" id="regionNav" aria-label="深圳区域目录"></nav><div class="region-districts" id="regionDistricts"></div></div>
+    </section>
+  </div>
+
+  <aside class="detail-panel" id="detailPanel" aria-labelledby="detailTitle" aria-hidden="true"><div class="detail-head"><button class="detail-back" id="detailBack" type="button">← 返回列表</button><button class="modal-close" id="closeDetail" type="button" aria-label="关闭详情">×</button></div><div class="detail-body" id="detailBody"></div></aside>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      'use strict';
+      const places = [
+        { id:'rice-lab', meal:'卤肉饭小碗', store:'米作实验室', category:'简餐', price:15, distance:180, access:'工作日午市', verified:'演示核验 · 09-03', x:452, y:284, area:'南山 · 粤海科技园', condition:'工作日 11:00–14:00 对外开放；小碗份量按一人餐示意。', other:[['鸡排饭小碗',18],['卤蛋加饭',12]] },
+        { id:'noodle-club', meal:'鲜肉云吞面', store:'面面俱到', category:'粉面', price:18, distance:260, access:'午市可用', verified:'演示核验 · 09-02', x:374, y:354, area:'南山 · 粤海科技园', condition:'工作日午市可用；实际供应以门店现场为准。', other:[['云吞净面',15],['紫菜鱼蛋面',20]] },
+        { id:'steam-box', meal:'香菇蒸鸡饭', store:'蒸汽盒子', category:'快餐', price:20, distance:390, access:'全天示例', verified:'演示核验 · 09-01', x:560, y:318, area:'南山 · 粤海科技园', condition:'按全天开放示例记录，非真实营业信息。', other:[['腊味双拼饭',22],['蒸排骨饭',25]] },
+        { id:'southern-bowl', meal:'潮汕牛肉粿条', store:'南方一碗', category:'粉面', price:22, distance:520, access:'限时供应', verified:'演示核验 · 08-29', x:611, y:433, area:'南山 · 粤海科技园', condition:'工作日 11:30–13:30 限时供应示例。', other:[['牛肉丸汤粉',18],['牛筋粿条',25]] },
+        { id:'green-table', meal:'番茄鸡蛋盖饭', store:'绿桌计划', category:'简餐', price:12, distance:610, access:'工作日午市', verified:'演示核验 · 08-28', x:284, y:438, area:'南山 · 后海', condition:'工作日午市对外开放示例；低价为原型数据。', other:[['青椒肉丝盖饭',16],['土豆牛肉盖饭',22]] },
+        { id:'quick-wok', meal:'黑椒鸡柳套餐', store:'快炒档案', category:'快餐', price:25, distance:760, access:'午市可用', verified:'演示核验 · 08-27', x:748, y:380, area:'南山 · 后海', condition:'工作日午市可用示例，具体套餐构成为演示。', other:[['照烧鸡排套餐',25],['咖喱土豆饭',20]] },
+        { id:'rice-noodle', meal:'酸辣粉加卤蛋', store:'街角粉档', category:'粉面', price:15, distance:880, access:'全天示例', verified:'演示核验 · 08-26', x:209, y:535, area:'福田 · 车公庙', condition:'全天开放为原型中的示意条件，未接入营业状态。', other:[['重庆小面',14],['肥肠粉',22]] },
+        { id:'morning-set', meal:'烧鹅叉烧双拼', store:'日常食堂', category:'简餐', price:25, distance:1150, access:'工作日午市', verified:'演示核验 · 08-25', x:827, y:548, area:'福田 · 车公庙', condition:'工作日午市供应示例，距离为模拟步行距离。', other:[['叉烧饭',20],['烧鹅饭',25]] }
+      ];
+      const regionData = {
+        '我的附近': { area:'南山 · 粤海科技园', note:'模拟位置附近', ids:['rice-lab','noodle-club','steam-box','southern-bowl','green-table','quick-wok'], districts:[['模拟位置附近','当前示例入口'],['粤海科技园','6 家示例'],['科技园南区','3 家示例']] },
+        '全城': { area:'全城示例', note:'深圳市 · 全部示例', ids:places.map(p=>p.id), districts:[['全城示例','8 家示例'],['南山','6 家示例'],['福田','2 家示例'],['罗湖','暂无示例']] },
+        '福田': { area:'福田 · 车公庙', note:'福田区示例', ids:['rice-noodle','morning-set'], districts:[['车公庙','2 家示例'],['香蜜湖','暂无示例'],['福田中心','暂无示例']] },
+        '罗湖': { area:'罗湖区 · 暂无示例', note:'罗湖区暂无示例', ids:[], districts:[['东门','暂无示例'],['笋岗','暂无示例'],['莲塘','暂无示例']] },
+        '南山': { area:'南山 · 粤海科技园', note:'南山区示例', ids:['rice-lab','noodle-club','steam-box','southern-bowl','green-table','quick-wok'], districts:[['南山科技园','6 家示例'],['后海','2 家示例'],['蛇口','暂无示例'],['西丽','暂无示例']] },
+        '盐田': { area:'盐田区 · 暂无示例', note:'盐田区暂无示例', ids:[], districts:[['沙头角','暂无示例'],['大梅沙','暂无示例']] },
+        '宝安': { area:'宝安区 · 暂无示例', note:'宝安区暂无示例', ids:[], districts:[['宝安中心','暂无示例'],['西乡','暂无示例'],['福永','暂无示例']] },
+        '龙岗': { area:'龙岗区 · 暂无示例', note:'龙岗区暂无示例', ids:[], districts:[['大运','暂无示例'],['布吉','暂无示例']] },
+        '龙华': { area:'龙华区 · 暂无示例', note:'龙华区暂无示例', ids:[], districts:[['民治','暂无示例'],['观澜','暂无示例']] },
+        '坪山': { area:'坪山区 · 暂无示例', note:'坪山区暂无示例', ids:[], districts:[['坪山中心','暂无示例']] },
+        '光明': { area:'光明区 · 暂无示例', note:'光明区暂无示例', ids:[], districts:[['光明中心','暂无示例']] },
+        '大鹏新区': { area:'大鹏新区 · 暂无示例', note:'大鹏新区暂无示例', ids:[], districts:[['大鹏所城','暂无示例'],['葵涌','暂无示例']] }
+      };
+      const navLabels = ['我的附近','全城','福田','罗湖','南山','盐田','宝安','龙岗','龙华','坪山','光明','大鹏新区'];
+      const districtOverrides = {
+        '模拟位置附近': { base:'我的附近' }, '粤海科技园': { base:'我的附近' }, '科技园南区': { base:'我的附近' },
+        '全城示例': { base:'全城' }, '南山科技园': { base:'我的附近' },
+        '后海': { base:'南山', area:'南山 · 后海', note:'后海示例', ids:['green-table','quick-wok'] },
+        '蛇口': { base:'南山', area:'南山 · 蛇口 · 暂无示例', note:'蛇口暂无示例', ids:[] },
+        '西丽': { base:'南山', area:'南山 · 西丽 · 暂无示例', note:'西丽暂无示例', ids:[] },
+        '车公庙': { base:'福田', area:'福田 · 车公庙', note:'车公庙示例', ids:['rice-noodle','morning-set'] }
+      };
+      const state = { budget:'20', category:'all', query:'', sort:'nearest', region:'我的附近', district:null, selectedId:'rice-lab', detailId:null, zoom:1, loved:new Set() };
+      const $ = id => document.getElementById(id);
+      const cards = $('cards'), mapMarkers = $('mapMarkers'), htmlMarkers = $('htmlMarkers');
+      const toast = (message) => { const el=$('toast'); el.textContent=message; el.classList.add('is-visible'); clearTimeout(window.__toast); window.__toast=setTimeout(()=>el.classList.remove('is-visible'),2300); };
+      const currentRegion = () => {
+        const base = regionData[state.region];
+        const override = state.district && districtOverrides[state.district];
+        if (!override) return base;
+        const source = regionData[override.base] || base;
+        return Object.assign({}, source, override, { districts: source.districts });
+      };
+      const filteredPlaces = () => {
+        const q=state.query.trim().toLowerCase();
+        return places.filter(p => currentRegion().ids.includes(p.id) && (state.budget==='all' || p.price<=Number(state.budget)) && (state.category==='all' || p.category===state.category) && (!q || [p.meal,p.store,p.category,p.area].join(' ').toLowerCase().includes(q))).sort((a,b)=>state.sort==='price' ? a.price-b.price || a.distance-b.distance : a.distance-b.distance);
+      };
+      function renderFilters() {
+        document.querySelectorAll('.budget-pill').forEach(btn=>btn.classList.toggle('is-selected',btn.dataset.budget===state.budget));
+        document.querySelectorAll('.category-pill').forEach(btn=>btn.classList.toggle('is-selected',btn.dataset.category===state.category));
+        $('sortSelect').value=state.sort;
+        $('clearSearch').classList.toggle('show',!!state.query);
+      }
+      function renderList() {
+        const result=filteredPlaces();
+        $('locationCity').textContent='深圳市'; $('locationArea').textContent=currentRegion().area;
+        $('listTitle').textContent=state.region==='我的附近'?'科技园附近的单人餐':(state.region==='全城'?'深圳市的单人餐':currentRegion().area+'的单人餐');
+        $('listCaption').textContent=state.query ? '搜索结果 · 原型演示数据' : '价格与核验信息均为原型演示数据';
+        $('resultCount').textContent=result.length+' 家示例';
+        cards.innerHTML='';
+        if (!result.length) { cards.innerHTML='<div class="empty-list"><strong>这里还没有示例</strong>该区域或筛选条件暂未配置餐食数据。<br />可切换到南山科技园查看示例。<button class="district-back" type="button" id="emptyBack">回到科技园入口</button></div>'; $('emptyBack').addEventListener('click',()=>setRegion('我的附近')); }
+        result.forEach(p=>cards.appendChild(cardNode(p)));
+        if (!result.some(p=>p.id===state.selectedId)) state.selectedId=result[0]?.id||null;
+        renderSelected(); renderMarkers(result); renderFilters();
+      }
+      function cardNode(p) { const article=document.createElement('article'); article.className='place-card'+(p.id===state.selectedId?' is-active':''); article.tabIndex=0; article.dataset.id=p.id; article.innerHTML='<div class="card-top"><div class="meal-name">'+p.meal+'</div><span class="price-pill">¥'+p.price+'</span></div><div class="store-line"><span>'+p.store+'</span><span class="sep">·</span><span class="distance">'+formatDistance(p.distance)+'</span></div><div class="card-bottom"><span class="access-tag">'+p.access+'</span><span class="verified">'+p.verified+'</span></div><button class="card-fav '+(state.loved.has(p.id)?'is-loved':'')+'" type="button" aria-label="'+(state.loved.has(p.id)?'取消收藏':'收藏')+' '+p.meal+'">'+(state.loved.has(p.id)?'♥':'♡')+'</button>'; article.addEventListener('click',e=>{ if(e.target.closest('.card-fav')) return; state.selectedId=p.id; renderList(); }); article.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault(); state.selectedId=p.id; renderList();} }); article.querySelector('.card-fav').addEventListener('click',e=>{e.stopPropagation(); toggleLove(p.id); }); return article; }
+      function formatDistance(distance) { return distance<1000 ? distance+'m' : (distance/1000).toFixed(1)+'km'; }
+      function renderSelected() { const p=places.find(x=>x.id===state.selectedId); const el=$('selectedCard'); if(!p || !filteredPlaces().some(x=>x.id===p.id)){ el.style.display='none'; return; } el.style.display='block'; el.innerHTML='<div class="card-top"><div class="meal-name">'+p.meal+'</div><span class="price-pill">¥'+p.price+'</span></div><div class="selected-meta"><span>'+p.store+'</span><span>·</span><b>'+formatDistance(p.distance)+'</b></div><div class="selected-foot"><span class="access-tag">'+p.access+'</span><span>'+p.verified+'</span><button class="selected-open" type="button">详情 →</button></div>'; el.onclick=e=>{if(!e.target.closest('.selected-open'))openDetail(p.id);}; el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(p.id);}}; el.querySelector('.selected-open').addEventListener('click',e=>{e.stopPropagation();openDetail(p.id);}); }
+      function mapPoint(p) { const stage=document.querySelector('.map-stage'), rect=stage.getBoundingClientRect(), vw=1000, vh=760; const scale=Math.max(rect.width/vw, rect.height/vh); const offsetX=(rect.width-vw*scale)/2, offsetY=(rect.height-vh*scale)/2; const cx=rect.width/2, cy=rect.height/2; return { left:cx+(offsetX+p.x*scale-cx)*state.zoom, top:cy+(offsetY+p.y*scale-cy)*state.zoom }; }
+      function renderMarkers(result) { mapMarkers.innerHTML=''; htmlMarkers.innerHTML=''; result.forEach(p=>{ const g=document.createElementNS('http://www.w3.org/2000/svg','g'); g.setAttribute('class','map-marker'+(p.id===state.selectedId?' is-active':'')); g.setAttribute('data-id',p.id); g.setAttribute('transform','translate('+p.x+' '+p.y+')'); g.innerHTML='<circle class="marker-pin" r="17"></circle>'; mapMarkers.appendChild(g); const button=document.createElement('button'); button.type='button'; button.className='html-marker'+(p.id===state.selectedId?' is-active':''); button.style.left=mapPoint(p).left+'px'; button.style.top=mapPoint(p).top+'px'; button.setAttribute('aria-label',p.meal+'，¥'+p.price); button.textContent='¥'+p.price; button.addEventListener('click',()=>{state.selectedId=p.id;renderList();}); htmlMarkers.appendChild(button); }); }
+      function openDetail(id) { const p=places.find(x=>x.id===id); if(!p) return; state.selectedId=id; state.detailId=id; const body=$('detailBody'); body.innerHTML='<span class="detail-price">单人餐 · ¥'+p.price+'</span><h1 class="detail-title" id="detailTitle">'+p.meal+'</h1><div class="detail-store">'+p.store+' · '+p.area+'</div><div class="detail-facts"><div class="fact"><span class="fact-label">距离（演示）</span><span class="fact-value">'+formatDistance(p.distance)+'</span></div><div class="fact"><span class="fact-label">最近核验（演示）</span><span class="fact-value">'+p.verified.replace('演示核验 · ','')+'</span></div></div><section class="detail-section"><h3>准入 / 供应条件</h3><div class="condition">'+p.condition+'</div></section><section class="detail-section"><h3>其他可选餐食</h3><div class="other-meals">'+p.other.map(m=>'<span class="other-meal">'+m[0]+' <b>¥'+m[1]+'</b></span>').join('')+'</div></section><section class="detail-section"><h3>证据区域</h3><div class="evidence">这里预留正式版的证据卡：来源链接、核验人、核验时间、价格截图或门店公告。当前为占位文字，不代表真实证据。</div></section><div class="detail-actions"><button class="detail-action secondary" id="loveDetail" type="button">'+(state.loved.has(p.id)?'♥ 已收藏':'♡ 收藏此餐')+'</button><button class="detail-action primary" id="navigateDemo" type="button">导航（演示）</button></div>'; $('detailPanel').classList.add('is-open'); $('detailPanel').setAttribute('aria-hidden','false'); setTimeout(()=>$('closeDetail').focus(),0); $('loveDetail').addEventListener('click',()=>{toggleLove(p.id); $('loveDetail').textContent=state.loved.has(p.id)?'♥ 已收藏':'♡ 收藏此餐';}); $('navigateDemo').addEventListener('click',()=>toast('正式版将打开外部导航；本原型不会发起外网请求。')); }
+      function closeDetail(){ $('detailPanel').classList.remove('is-open'); $('detailPanel').setAttribute('aria-hidden','true'); state.detailId=null; }
+      function toggleLove(id){ if(state.loved.has(id)){state.loved.delete(id);toast('已取消收藏（仅本次会话）');}else{state.loved.add(id);toast('已收藏（仅本次会话）');} renderList(); }
+      function renderRegionNav(){ const nav=$('regionNav'); nav.innerHTML=navLabels.map(label=>'<button type="button" data-region="'+label+'" class="'+(state.region===label?'is-selected':'')+'">'+label+'</button>').join(''); nav.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.region=b.dataset.region;state.district=null;renderRegionNav();renderDistricts();renderList();})); }
+      function renderDistricts(){ const data=currentRegion(), content=$('regionDistricts'); const has=data.ids.length>0; content.innerHTML='<div class="district-heading">'+data.note+'</div>'+(has?'<div class="district-grid">'+data.districts.map(d=>'<button class="district-btn" type="button" data-district="'+d[0]+'"><strong>'+d[0]+'</strong><span>'+d[1]+'</span></button>').join('')+'</div>':'<div class="district-empty"><strong>该区域暂未配置示例</strong>正式版可在这里接入已核验餐食。当前仅展示南山科技园与福田车公庙的演示数据。<br /><button class="district-back" type="button" id="regionBackToTech">回到科技园入口</button></div>'); content.querySelectorAll('.district-btn').forEach(b=>b.addEventListener('click',()=>{state.district=b.dataset.district;const target=districtOverrides[b.dataset.district];if(target)state.region=target.base;renderRegionNav();renderDistricts();renderList();closeRegion();toast('已切换到 '+currentRegion().area); })); const back=$('regionBackToTech'); if(back) back.addEventListener('click',()=>{state.region='我的附近';state.district=null;renderRegionNav();renderDistricts();renderList();}); }
+      function openRegion(){ renderRegionNav();renderDistricts();$('regionBackdrop').classList.add('is-open');$('locationTrigger').setAttribute('aria-expanded','true'); setTimeout(()=>$('closeRegion').focus(),0); }
+      function closeRegion(){ $('regionBackdrop').classList.remove('is-open');$('locationTrigger').setAttribute('aria-expanded','false'); }
+      function resetDemo(){ state.budget='20';state.category='all';state.query='';state.sort='nearest';state.region='我的附近';state.district=null;state.selectedId='rice-lab';state.zoom=1;state.loved.clear(); $('searchInput').value='';setMapZoom();closeDetail();closeRegion();renderList();toast('已重置为科技园附近演示'); }
+      function setRegion(region){state.region=region;state.district=null;state.selectedId=regionData[region].ids[0]||null;renderList();}
+      function setMapZoom(){ $('mapSvg').style.transform='scale('+state.zoom+')'; $('resetMap').textContent=Math.round(state.zoom*100)+'%'; renderMarkers(filteredPlaces()); }
+      document.querySelectorAll('.budget-pill').forEach(b=>b.addEventListener('click',()=>{state.budget=b.dataset.budget;renderList();}));
+      document.querySelectorAll('.category-pill').forEach(b=>b.addEventListener('click',()=>{state.category=b.dataset.category;renderList();}));
+      $('sortSelect').addEventListener('change',e=>{state.sort=e.target.value;renderList();});
+      $('searchInput').addEventListener('input',e=>{state.query=e.target.value;renderList();}); $('clearSearch').addEventListener('click',()=>{state.query='';$('searchInput').value='';renderList();$('searchInput').focus();});
+      $('locationTrigger').addEventListener('click',openRegion); $('closeRegion').addEventListener('click',closeRegion); $('regionBackdrop').addEventListener('click',e=>{if(e.target===$('regionBackdrop'))closeRegion();});
+      $('closeDetail').addEventListener('click',closeDetail); $('detailBack').addEventListener('click',closeDetail);
+      $('headerReset').addEventListener('click',resetDemo); $('brandReset').addEventListener('click',resetDemo); $('resetMap').addEventListener('click',()=>{state.zoom=1;setMapZoom();}); $('zoomIn').addEventListener('click',()=>{state.zoom=Math.min(1.8,+(state.zoom+.2).toFixed(1));setMapZoom();}); $('zoomOut').addEventListener('click',()=>{state.zoom=Math.max(.7,+(state.zoom-.2).toFixed(1));setMapZoom();}); $('simulateLocation').addEventListener('click',()=>toast('已标出模拟位置；不会请求你的真实定位。'));
+      document.querySelectorAll('[data-sheet-action]').forEach(b=>b.addEventListener('click',()=>{ $('listPane').dataset.sheet=b.dataset.sheetAction; }));
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('detailPanel').classList.contains('is-open'))closeDetail();else if($('regionBackdrop').classList.contains('is-open'))closeRegion();} });
+      window.addEventListener('resize',()=>renderMarkers(filteredPlaces()));
+      renderList(); setMapZoom();
+    })();
+  </script>
+</body>
+</html>

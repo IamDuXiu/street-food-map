@@ -1,0 +1,49 @@
+{
+  "name": "shenzhen-budget-map",
+  "version": "0.1.0",
+  "private": true,
+  "overrides": {
+    "postcss": ">=8.5.23",
+    "sharp": "0.35.4"
+  },
+  "scripts": {
+    "setup": "tsx scripts/setup-demo.ts",
+    "dev": "next dev --webpack",
+    "dev:lan": "node scripts/dev-lan.mjs",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "admin:password": "tsx scripts/admin-password.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore.ts",
+    "maintenance": "tsx scripts/maintenance.ts",
+    "fresh-start": "node --import tsx scripts/fresh-start-check.mjs",
+    "phase5:check": "node scripts/phase5-check.mjs",
+    "seed:candidates": "tsx scripts/seed-candidate-pool.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "11.10.0",
+    "next": "16.3.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sharp": "0.35.4",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/better-sqlite3": "7.6.12",
+    "@types/node": "22.7.4",
+    "@types/react": "19.1.2",
+    "@types/react-dom": "19.1.2",
+    "eslint": "9.27.0",
+    "eslint-config-next": "16.3.4",
+    "prettier": "3.3.3",
+    "tsx": "4.19.2",
+    "typescript": "5.6.2",
+    "vitest": "2.1.2"
+  }
+}
