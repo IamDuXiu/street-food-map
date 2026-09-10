@@ -384,3 +384,56 @@ button:disabled { cursor: wait; opacity: .62; }
   .region-search-results { flex: 1; padding: 5px 18px 20px; }
   .region-picker-footer { padding: 9px 18px; }
 }
+
+/* ==== Admin workspace refresh: sticky chrome, live badges, tactile feedback ==== */
+
+/* 键盘可达性：跳到主内容 */
+.skip-to-content { position: absolute; top: -42px; left: 5vw; z-index: 60; padding: 9px 14px; background: var(--ink); color: white; font-size: 12px; font-weight: 700; transition: top .2s ease; }
+.skip-to-content:focus { top: 84px; }
+@media (max-width: 620px) { .skip-to-content { left: 18px; } .skip-to-content:focus { top: 72px; } }
+
+/* 粘性 chrome：长页面导航不丢 */
+.admin-header { position: sticky; top: 0; z-index: 40; }
+.admin-layout .admin-sidebar { position: sticky; top: 76px; height: calc(100dvh - 76px); overflow-y: auto; }
+@media (max-width: 620px) { .admin-layout .admin-sidebar { position: static; height: auto; overflow: visible; } }
+
+/* 侧栏导航：活动指示条 + 过渡 + 角标细化（角标底色等沿用既有规则） */
+.admin-sidebar nav a { position: relative; transition: background-color .18s ease, color .18s ease; }
+.admin-sidebar nav a::before { content: ""; position: absolute; inset: 9px auto 9px 0; width: 3px; background: transparent; transition: background-color .18s ease; }
+.admin-sidebar nav a.active::before { background: var(--yellow); }
+.admin-sidebar nav b { min-width: 19px; text-align: center; font-weight: 700; }
+
+/* 侧栏底部：链接与退出统一为描边芯片 */
+.admin-sidebar-bottom a, .admin-logout { display: block; margin-top: 8px; padding: 10px 12px; border: 1px solid #8a9b8f; text-align: center; font-size: 12px; text-decoration: none; transition: border-color .18s ease, color .18s ease; }
+.admin-logout { width: 100%; color: #d3ddd3; background: transparent; }
+.admin-sidebar-bottom a:hover, .admin-logout:hover { border-color: var(--yellow); color: var(--yellow); }
+
+/* 按钮：统一过渡与按下反馈 */
+.primary-button, .secondary-button, .danger-button { transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .18s ease; }
+.secondary-button:hover { border-color: var(--red); background: #fff0ea; color: var(--red); }
+.review-detail .secondary-button:hover { border-color: #fffdf7; background: rgba(255,253,247,.1); color: #fffdf7; }
+.danger-button:hover { border-color: var(--red); background: var(--red); color: white; }
+.primary-button:active, .secondary-button:active, .danger-button:active { transform: translateY(1px); }
+
+/* 卡片、行、芯片：可触摸反馈 */
+.metric-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+.metric-card:hover { transform: translateY(-2px); border-color: var(--green); box-shadow: 4px 4px 0 rgba(38,107,81,.16); }
+.metric-feature:hover { border-color: var(--yellow); box-shadow: 4px 4px 0 rgba(23,32,29,.2); }
+.table-row { transition: background-color .15s ease; }
+.table-row:hover { background-color: #f8f4ec; }
+.filter-chip { transition: background-color .18s ease, color .18s ease, border-color .18s ease; }
+.filter-chip:not(.active):hover { border-color: var(--ink); color: var(--ink); }
+.review-item { transition: border-color .18s ease, box-shadow .18s ease; }
+.review-item:not(.active):hover { border-color: var(--red); box-shadow: 3px 3px 0 rgba(185,56,33,.12); }
+.place-admin-row { transition: border-color .18s ease, box-shadow .18s ease; }
+.place-admin-row:hover { border-color: var(--green); box-shadow: 3px 3px 0 rgba(38,107,81,.14); }
+.row-action { transition: color .18s ease; }
+.row-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* 缺陷修复：仪表盘私信队列箭头（DOM 是 <a>，原样式误配 button） */
+.inbox-item a { position: absolute; top: 36px; right: 0; color: var(--red); font-size: 20px; transition: transform .18s ease; }
+.inbox-item a:hover { transform: translateX(3px); }
+
+/* 头部状态点呼吸脉冲（全局 reduced-motion 规则自动清零） */
+.demo-pill .status-dot { animation: demo-pulse 2.4s ease-in-out infinite; }
+@keyframes demo-pulse { 50% { transform: scale(1.4); opacity: .55; } }
