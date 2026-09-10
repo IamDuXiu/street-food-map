@@ -19,6 +19,3 @@ backups/**
 outputs/**
 tmp/**
 sources/**
-!uploads/.gitkeep
-!backups/.gitkeep
-!data/.gitkeep
