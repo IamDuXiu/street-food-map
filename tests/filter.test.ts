@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PLACES } from '@/lib/fixtures';
-import { eligibleMeals, filterPlaces, formatPrice, lowestMeal, lowestPrice, prepareNearbyPlaces } from '@/lib/filter';
+import { eligibleMeals, filterPlaces, formatDistance, formatPrice, lowestMeal, lowestPrice, prepareNearbyPlaces, withRegionDistance } from '@/lib/filter';
 
 describe('饭签筛选工具', () => {
   it('以人民币分转换展示价格并取最低有效餐食', () => {
@@ -29,5 +29,21 @@ describe('饭签筛选工具', () => {
     expect(filterPlaces(PLACES, { maxPrice: 15, zoneId: 'sz university', tag: 'all', query: '' }).map((p) => p.id)).toEqual(['shenda-yuehai-canteen']);
     expect(filterPlaces(PLACES, { maxPrice: 30, zoneId: 'science park', tag: '早餐', query: '' })).toHaveLength(2);
     expect(filterPlaces(PLACES, { maxPrice: 30, zoneId: 'all', tag: 'all', query: '牛肉' })).toHaveLength(1);
+  });
+
+  it('距离格式：不足 1 公里用米，否则用公里', () => {
+    expect(formatDistance(450)).toBe('450 m');
+    expect(formatDistance(999)).toBe('999 m');
+    expect(formatDistance(1200)).toBe('1.2 km');
+    expect(formatDistance(1000)).toBe('1.0 km');
+  });
+
+  it('按区域中心附加距离并四舍五入', () => {
+    const center = { lng: PLACES[0].lng, lat: PLACES[0].lat };
+    const [withDist] = withRegionDistance([PLACES[0]], center);
+    expect(withDist.distanceMeters).toBe(0);
+    expect(withDist.distanceMeters).toBeTypeOf('number');
+    const all = withRegionDistance(PLACES, center);
+    expect(all.every((place) => Number.isInteger(place.distanceMeters))).toBe(true);
   });
 });

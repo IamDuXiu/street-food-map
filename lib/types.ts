@@ -1,3 +1,5 @@
+import type { FreshnessLabel } from './freshness';
+
 export type ZoneId = string;
 
 export type Tag =
@@ -10,7 +12,7 @@ export type Tag =
   | '学校食堂'
   | '便利店';
 
-export type VerificationLevel = '高可信' | '中高可信' | '近期核验';
+export type VerificationLevel = '高可信' | '中高可信' | '中可信' | '近期核验';
 
 export interface Meal {
   id: string;
@@ -20,7 +22,10 @@ export interface Meal {
   description: string;
   observedAt: string;
   method: string;
-  freshness: '近期核验' | '有效' | '可能过期' | '已核验' | '超过 180 天';
+  freshness: FreshnessLabel;
+  ageDays?: number;
+  previousPriceFen?: number;
+  priceChange?: { direction: 'up' | 'down'; deltaFen: number };
 }
 
 export interface Place {

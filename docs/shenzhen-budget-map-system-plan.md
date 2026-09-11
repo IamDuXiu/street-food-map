@@ -540,6 +540,7 @@ new → triaged → verifying → converted
 | 方法与路径 | 用途 |
 |---|---|
 | `GET /api/v1/map` | 按 bbox、关键词、价格、标签、样板区查询地图点位 |
+| `GET /api/v1/recent` | 查询最近核验的公开地点（首页「最近核验」入口） |
 | `GET /api/v1/places/:id` | 获取地点、餐食和价格详情 |
 | `GET /api/v1/config` | 获取价格档、标签和试点区配置 |
 | `POST /api/v1/submissions` | 提交匿名线索或纠错 |
@@ -557,6 +558,17 @@ new → triaged → verifying → converted
 ```
 
 地图接口只返回卡片所需的精简字段，不返回来源链接、审核备注或全部历史数据。
+
+`GET /api/v1/recent` 示例参数：
+
+```text
+?days=7      # 滚动窗口天数，1–30，默认 7
+&limit=3     # 返回条数，1–20，默认 5
+```
+
+返回结构与 `/api/v1/map` 条目一致：`{ "data": PublicPlace[], "meta": { "count", "days", "limit" } }`。超出参数范围统一返回 400。
+
+公开地点 DTO 的餐食条目除既有字段外新增：`freshness`（近期核验/有效/可能过期/已过期 四档）、`ageDays`（核验距今整数天数）、以及价格变动字段 `previousPriceFen` 与 `priceChange: { direction: 'up'|'down', deltaFen }`（仅当存在上一次核验且价格有差额时输出；首次核验或价格持平不输出）。`previousPriceFen`/`priceChange` 只由平台自有的结构化价格历史派生，不暴露来源链接或审核备注。
 
 创建投稿后，服务端同时返回短期上传令牌；图片接口必须校验投稿 ID 与该令牌的绑定关系。查询码不能作为图片上传令牌使用。
 

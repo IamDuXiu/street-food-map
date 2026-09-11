@@ -114,3 +114,52 @@ Vitest 在模块导入前设置唯一临时 `DATABASE_PATH`、`UPLOADS_DIR` 和 
 ## 2026-09-03 · 真实数据模板显示中文列名
 
 后台下载和阶段 5 静态 CSV 模板统一显示 16 个中文列名，导入解析器在校验前转换为既有内部字段，避免中文界面要求操作者理解代码命名。列名和顺序仍是严格契约；旧英文模板继续兼容，不改变数据库字段或导入事务。
+
+## 2026-09-11 · 首页/详情可用性优化（8 项采纳、3 优先修、11 不采纳、13 不做）
+
+### 采纳的 8 项
+
+1. **T3 可信度派生**：新增 `lib/trust.ts`（`verificationLevelForMethod` / `methodLabel` / `placeTrust`）；`VerificationLevel` 增加「中可信」；`PlaceRepository.toPlace` 不再写死 `verification:'高可信'`，改为按餐食核验方式取最高等级派生；`trust-badge` 按 label 套 `trust-mid`/`trust-low`；卡片新增可信摘要行（核验方式 · N 次核验 · 有图）。
+2. **T5 新鲜度四档 + 相对时间**：抽 `lib/freshness.ts` 为唯一分档来源（`services.freshness` 保持兼容 re-export），DTO 输出 `近期核验/有效/可能过期/已过期` 与 `ageDays`；卡片核验文案改为「今天/1 天前/N 天前核验」，并按新鲜度加色。
+3. **T1 品类 emoji**：新增 `lib/category-emoji.ts`，店名前渲染品类 emoji（`place-card-emoji`，`aria-hidden`）；地图点位不改。
+4. **T4 距离常显**：`lib/filter.ts` 新增 `withRegionDistance` 与 `formatDistance`；非 nearby 按视野中心附加距离，nearby 保留既有 5km 过滤不重复叠加；卡片显示「距你/距中心 · 450 m / 1.2 km」；不向服务端发送用户坐标。
+5. **T7 可移除筛选 chips**：控制栏下新增 `activeFilterRow`/`activeFilterChip`，预算/标签/关键词/区域各返回默认值，胶囊可换行、移动端横向滚动。
+6. **T9 「我的附近」按钮**：`filterRow` 内常驻入口，`aria-pressed` 反映激活态，沿用既有定位提示与 5 秒超时。
+7. **T2 价格变动标记**：repository 以子查询派生 `previousPriceFen`/`priceChange`（首次/持平不输出）；卡片价格旁 `↑¥N`/`↓¥N`，详情页「较上次 +¥N/-¥N」或「首次核验」。
+8. **T6 最近核验入口**：`listRecentlyVerified`（days 1–30 默认 7、limit≤20 默认 5，复用公开资格 SQL）+ `GET /api/v1/recent` + `recent-strip`（最多 3 条，空/错误/待共建静默隐藏）。
+
+### 优先修的 3 项
+
+1. 修复 `toPlace` 写死 `verification:'高可信'` 导致中高可信/中可信地点被错误标为高可信的 bug。
+2. 清理 `Meal.freshness` 遗留的「已核验」「超过 180 天」为四档，并同步 `/api/v1/places/:id` 的过期判断（`!== '已过期'`）。
+3. 距离常显避免 nearby 与非 nearby 重复叠加，nearby 保留既有 5km 过滤与距离排序语义。
+
+### 不采纳的 11 项
+
+1. 不新增 `price_reports` 历史价格列或迁移，改用子查询派生上一次价格。
+2. 不在 repository 复制新鲜度逻辑，抽 `lib/freshness.ts` 为单一来源，`services.freshness` re-export 保兼容。
+3. 卡片不再展示 `observedAt.replaceAll('-','.')` 原始日期，改为相对时间。
+4. 不向服务端发送用户精确坐标（`origin` 参数仍拒绝），距离只在浏览器端计算。
+5. 地图点位不渲染品类 emoji。
+6. 「最近核验」不落库、不新增后台配置，直接按滚动窗口派生。
+7. 移动端（≤620px）底部弹层不展示「最近核验」条，避免压缩 peek 态。
+8. `/api/v1/recent` 不做 fixture 回退，空数据直接返回空并由前端静默隐藏。
+9. 不改变公开资格谓词（active/open、≤¥25、非 external_lead、≤180 天）。
+10. `previousPriceFen` 只由平台价格历史派生，不暴露来源 URL/审核备注/storage_path/note。
+11. 价格持平不输出 `priceChange`，避免无意义 0 变动噪音。
+
+### 不做的 13 项
+
+1. 不改 `AGENTS.md`、依赖版本、锁文件、CSV 列名契约。
+2. 地图点位不加 emoji。
+3. 移动端「最近核验」条（本轮不做）。
+4. 不接 `analytics_events` 写入。
+5. 不做真实腾讯/高德 Key 现场验证。
+6. 不做手机 HTTPS 定位同意流程验证。
+7. 不做多城市/城市切换。
+8. 商户自报不能直接公开，仍须独立核验。
+9. 不做价格历史完整列表页。
+10. 非 nearby 场景不做服务端距离排序（服务端仍按 bbox/价格/新鲜度排序，客户端仅算距离展示）。
+11. 「最近核验」不做分页/滚动加载。
+12. days/limit 不做管理员可配置，固定 1–30/1–20 校验。
+13. 不做 git commit / push。

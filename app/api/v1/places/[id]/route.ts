@@ -21,8 +21,8 @@ export async function GET(
     const data = toPublicPlace(place);
     if (
       !data.meals.length ||
-      !place.meals.some(
-        (meal) => meal.priceFen <= 2500 && meal.freshness !== '超过 180 天',
+      !      place.meals.some(
+        (meal) => meal.priceFen <= 2500 && meal.freshness !== '已过期',
       )
     )
       return NextResponse.json(

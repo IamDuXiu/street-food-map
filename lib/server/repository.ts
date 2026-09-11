@@ -3,6 +3,8 @@ import { normalize, newId } from './seed';
 import { recordAudit } from './audit';
 import type { Place } from '../types';
 import { distanceMeters } from '../geo';
+import { ageInDays, freshness, freshnessLabel } from '../freshness';
+import { placeTrust } from '../trust';
 
 export interface DbPlace extends Place {
   zoneName: string;
@@ -129,6 +131,24 @@ export class PlaceRepository {
       );
     });
     return result.slice(0, Math.min(filters.limit ?? 500, 500));
+  }
+
+  /** Most recently verified eligible places within a rolling day window. */
+  listRecentlyVerified(
+    options: { days?: number; limit?: number; now?: Date } = {},
+  ): Array<
+    DbPlace & {
+      minimumPriceFen: number;
+      freshestObservedAt: string;
+    }
+  > {
+    const days = Math.min(Math.max(Math.trunc(options.days ?? 7), 1), 30);
+    const limit = Math.min(Math.max(Math.trunc(options.limit ?? 5), 1), 20);
+    const now = options.now ?? new Date();
+    const places = this.listPublic({ sort: 'freshness', now, limit: 500 });
+    return places
+      .filter((place) => ageInDays(place.freshestObservedAt, now) <= days)
+      .slice(0, limit);
   }
 
   listAdmin(filters: { q?: string; zoneId?: string } = {}): DbPlace[] {
@@ -266,7 +286,9 @@ export class PlaceRepository {
   private toPlace(row: Record<string, unknown>): DbPlace {
     const meals = this.db
       .prepare(
-        `SELECT mi.*, pr.price_fen, pr.observed_at, pr.verification_method, pr.status price_status FROM menu_items mi LEFT JOIN price_reports pr ON pr.menu_item_id=mi.id AND pr.status='verified' AND pr.verification_method <> 'external_lead' WHERE mi.place_id=? AND mi.active=1 ORDER BY pr.price_fen`,
+        `SELECT mi.*, pr.price_fen, pr.observed_at, pr.verification_method, pr.status price_status,
+        (SELECT pp.price_fen FROM price_reports pp WHERE pp.menu_item_id=mi.id AND pp.status IN ('verified','superseded') AND pp.id<>pr.id AND pp.verification_method <> 'external_lead' ORDER BY pp.observed_at DESC, pp.created_at DESC LIMIT 1) prev_price_fen
+        FROM menu_items mi LEFT JOIN price_reports pr ON pr.menu_item_id=mi.id AND pr.status='verified' AND pr.verification_method <> 'external_lead' WHERE mi.place_id=? AND mi.active=1 ORDER BY pr.price_fen`,
       )
       .all(row.id) as Array<Record<string, unknown>>;
     const tags = this.db
@@ -283,6 +305,37 @@ export class PlaceRepository {
       width: number | null;
       height: number | null;
     }>;
+    const mappedMeals = meals
+      .filter((meal) => meal.price_fen !== null)
+      .map((meal) => {
+        const observedAt = String(meal.observed_at);
+        const priceFen = Number(meal.price_fen);
+        const previous =
+          meal.prev_price_fen !== null && meal.prev_price_fen !== undefined
+            ? Number(meal.prev_price_fen)
+            : undefined;
+        const delta = previous !== undefined ? priceFen - previous : 0;
+        return {
+          id: String(meal.id),
+          name: String(meal.name),
+          priceFen,
+          category: String(meal.category),
+          description: String(meal.description ?? ''),
+          observedAt,
+          method: String(meal.verification_method),
+          freshness: freshnessLabel(freshness(observedAt)),
+          ageDays: ageInDays(observedAt),
+          ...(previous !== undefined && delta !== 0
+            ? {
+                previousPriceFen: previous,
+                priceChange: {
+                  direction: delta > 0 ? 'up' : 'down',
+                  deltaFen: Math.abs(delta),
+                } as const,
+              }
+            : {}),
+        };
+      });
     return {
       id: String(row.id),
       zoneId: String(row.zone_id) as Place['zoneId'],
@@ -302,31 +355,9 @@ export class PlaceRepository {
       note: String(row.opening_hours_note ?? ''),
       recordStatus: String(row.record_status),
       businessStatus: String(row.business_status),
-      verification: '高可信',
+      verification: placeTrust(mappedMeals).level,
       evidence,
-      meals: meals
-        .filter((meal) => meal.price_fen !== null)
-        .map((meal) => {
-          const age = Math.floor(
-            (Date.now() - new Date(String(meal.observed_at)).getTime()) /
-              86400000,
-          );
-          return {
-            id: String(meal.id),
-            name: String(meal.name),
-            priceFen: Number(meal.price_fen),
-            category: String(meal.category),
-            description: String(meal.description ?? ''),
-            observedAt: String(meal.observed_at),
-            method: String(meal.verification_method),
-            freshness:
-              age <= 30
-                ? ('近期核验' as const)
-                : age <= 180
-                  ? ('已核验' as const)
-                  : ('超过 180 天' as const),
-          };
-        }),
+      meals: mappedMeals,
     };
   }
 }

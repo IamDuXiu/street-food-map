@@ -437,3 +437,13 @@ button:disabled { cursor: wait; opacity: .62; }
 /* 头部状态点呼吸脉冲（全局 reduced-motion 规则自动清零） */
 .demo-pill .status-dot { animation: demo-pulse 2.4s ease-in-out infinite; }
 @keyframes demo-pulse { 50% { transform: scale(1.4); opacity: .55; } }
+
+/* 街头饭签：卡片可信摘要 / 品类 emoji / 价格变动标记 */
+.place-card-emoji { margin-right: 2px; font-size: 15px; line-height: 1; }
+.place-card-trust { margin: 2px 0 0; color: var(--muted); font-size: 10px; }
+.price-change { font-size: 10px; font-weight: 700; white-space: nowrap; }
+.price-change-up { color: #d8482f; }
+.price-change-down { color: var(--green); }
+.meal-price-change { color: var(--muted); font-size: 10px; font-weight: 400; }
+.meal-price-change.up { color: #d8482f; font-weight: 700; }
+.meal-price-change.down { color: var(--green); font-weight: 700; }

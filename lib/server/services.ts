@@ -10,19 +10,9 @@ import {
   type CsvRow,
   verifiedVerificationMethods,
 } from './validation';
+import { freshness } from '../freshness';
 
-export function freshness(
-  observedAt: string,
-  now = new Date(),
-): 'recent' | 'valid' | 'stale' | 'expired' {
-  const days = Math.floor(
-    (now.getTime() - new Date(observedAt).getTime()) / 86400000,
-  );
-  if (days <= 30) return 'recent';
-  if (days <= 90) return 'valid';
-  if (days <= 180) return 'stale';
-  return 'expired';
-}
+export { freshness };
 export function isPublicPrice(
   priceFen: number,
   observedAt: string,

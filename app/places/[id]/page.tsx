@@ -102,6 +102,11 @@ export default async function PlacePage({
                   <div className="meal-price">
                     <strong>{formatPrice(meal.priceFen)}</strong>
                     <small>{meal.category}</small>
+                    <small className={`meal-price-change ${meal.priceChange ? meal.priceChange.direction : ''}`}>
+                      {meal.priceChange
+                        ? `较上次 ${meal.priceChange.direction === 'up' ? '+' : '-'}${formatPrice(meal.priceChange.deltaFen)}`
+                        : '首次核验'}
+                    </small>
                   </div>
                   <div className="meal-proof">
                     <TrustBadge label={meal.freshness} compact />

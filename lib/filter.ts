@@ -15,6 +15,24 @@ export function formatPrice(priceFen: number): string {
     : `¥${yuan.toFixed(2).replace(/0+$/, '')}`;
 }
 
+/** <1000 -> '450 m'；>=1000 -> '1.2 km'。 */
+export function formatDistance(meters: number): string {
+  return meters < 1000
+    ? `${Math.round(meters)} m`
+    : `${(meters / 1000).toFixed(1)} km`;
+}
+
+/** Attach the distance from a region/viewport center to every place (client-side only). */
+export function withRegionDistance(
+  places: Place[],
+  center: { lng: number; lat: number },
+): Place[] {
+  return places.map((place) => ({
+    ...place,
+    distanceMeters: Math.round(distanceMeters(center, place)),
+  }));
+}
+
 export function filterPlaces(places: Place[], state: FilterState): Place[] {
   const query = state.query.trim().toLowerCase();
   return places.filter((place) => {

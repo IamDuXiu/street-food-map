@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapStage } from './map-stage';
 import { PlaceCard } from './place-card';
+import { RecentStrip } from './recent-strip';
 import { RegionPicker } from './region-picker';
 import styles from './home-client.module.css';
-import { formatPrice, lowestMeal, prepareNearbyPlaces } from '@/lib/filter';
+import { formatPrice, lowestMeal, prepareNearbyPlaces, withRegionDistance } from '@/lib/filter';
 import { wgs84ToGcj02 } from '@/lib/geo';
 import {
   findShenzhenRegion,
@@ -151,8 +152,15 @@ export function HomeClient() {
         if (!response.ok) throw new Error('REQUEST_FAILED');
         const payload = await response.json() as { data?: Place[] };
         let nextPlaces = payload.data ?? [];
-        if (origin && regionId === 'nearby') {
-          nextPlaces = prepareNearbyPlaces(nextPlaces, origin, effectiveSort, NEARBY_RADIUS_METERS);
+        if (regionId === 'nearby') {
+          if (origin) {
+            nextPlaces = prepareNearbyPlaces(nextPlaces, origin, effectiveSort, NEARBY_RADIUS_METERS);
+          }
+        } else if (selectedRegion) {
+          nextPlaces = withRegionDistance(nextPlaces, {
+            lng: selectedRegion.centerLng,
+            lat: selectedRegion.centerLat,
+          });
         }
         setPlaces(nextPlaces);
       })
@@ -165,7 +173,7 @@ export function HomeClient() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [maxPrice, regionId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion]);
+  }, [maxPrice, regionId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion, selectedRegion]);
 
   function chooseRegion(region: ShenzhenRegion) {
     setRegionId(region.id);
@@ -209,6 +217,12 @@ export function HomeClient() {
     setSelectedId(null);
   }
 
+  const activeChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
+  if (maxPrice !== 25) activeChips.push({ key: 'price', label: `预算 ≤ ¥${maxPrice}`, onRemove: () => setMaxPrice(25) });
+  if (tag !== 'all') activeChips.push({ key: 'tag', label: `标签 · ${tag}`, onRemove: () => setTag('all') });
+  if (query.trim()) activeChips.push({ key: 'query', label: `关键词 · ${query.trim()}`, onRemove: () => setQuery('') });
+  if (regionId !== 'shenzhen') activeChips.push({ key: 'region', label: `区域 · ${regionId === 'nearby' ? '我的附近' : (selectedRegion?.label ?? regionId)}`, onRemove: () => { setRegionId('shenzhen'); setOrigin(undefined); setMovedBbox(undefined); setSelectedId(null); if (sort === 'distance') setSort('price'); } });
+
   return (
     <main className={`${styles.homeShell} home-shell`}>
       <section className={styles.controlBar} aria-label="搜索和筛选">
@@ -227,13 +241,22 @@ export function HomeClient() {
           </div>
           <label className={styles.filterControl}>条件<select value={tag} onChange={(event) => setTag(event.target.value)} aria-label="按条件或标签筛选"><option value="all">全部</option>{availableTags.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label className={styles.filterControl}>排序<select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} aria-label="结果排序"><option value="price">最低价优先</option><option value="freshness">最近核验</option><option value="distance" disabled={!origin}>附近优先{origin ? '' : '（先定位）'}</option></select></label>
+          <button type="button" className={regionId === 'nearby' ? styles.locateButtonActive : styles.locateButton} aria-pressed={regionId === 'nearby'} onClick={locateNearby}>◎ 我的附近</button>
           <span className={styles.filterHint}>有效餐食 ≤ {formatPrice(maxPrice * 100)}</span>
         </div>
+        {activeChips.length > 0 && (
+          <div className={styles.activeFilterRow} aria-label="已选筛选">
+            {activeChips.map((chip) => (
+              <button key={chip.key} type="button" className={styles.activeFilterChip} aria-label={`移除筛选：${chip.label}`} onClick={chip.onRemove}>{chip.label} ×</button>
+            ))}
+          </div>
+        )}
         {locationMessage && <p className={styles.locationNotice} role="status">◎ {locationMessage}</p>}
       </section>
 
       <div className={`${styles.homeLayout} home-layout`}>
         <section className={`${styles.resultsPanel} results-panel ${styles[`sheet-${mobileListState}`]} ${!loading && selected ? styles.hasSelection : ''}`} aria-live="polite">
+          {!isPlannedRegion && <RecentStrip />}
           <div className={styles.resultsHeading}>
             <div>
               <p className={styles.sectionLabel}>当前范围 · {viewport.label}</p>
@@ -254,7 +277,7 @@ export function HomeClient() {
             <b>查看详情 ↗</b>
           </Link>}
           {error && <div className={styles.dataNotice} role="status"><span>{error}</span><button type="button" onClick={retry}>重试</button></div>}
-          {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><p>{viewport.label}已开放浏览，第一条信息等待附近的人共同补上。</p><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><p>试试放宽价格、换一个类别，或选择其他区域。</p><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
+          {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><p>{viewport.label}已开放浏览，第一条信息等待附近的人共同补上。</p><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><p>试试放宽价格、换一个类别，或选择其他区域。</p><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
           <p className={styles.listNote}>价格来自现场菜单、公开菜单或近期用户核验。<Link href="/about">了解核验规则 ↗</Link></p>
         </section>
         <MapStage places={places} viewport={viewport} selectedId={selected?.id ?? selectedId} onSelect={(id) => { setSelectedId(id); setMobileListState('peek'); }} onSearchViewport={(nextBbox) => setMovedBbox(nextBbox)} userLocation={regionId === 'nearby' ? origin : undefined} />

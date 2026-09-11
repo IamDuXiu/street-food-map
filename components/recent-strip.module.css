@@ -1,0 +1,60 @@
+.recentStrip {
+  margin: 0 5px 12px;
+  padding: 9px 11px;
+  border: 1px solid #dededb;
+  border-radius: 9px;
+  background: #fafaf8;
+}
+.recentStripTitle {
+  margin: 0 0 6px;
+  color: #8b8d8f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.recentStripList {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recentStripItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 5px 0;
+  color: #242526;
+  border-bottom: 1px dashed #e8e8e6;
+}
+.recentStripItem:last-child {
+  border-bottom: 0;
+}
+.recentStripItem strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recentStripItem span {
+  color: #737579;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.recentStripItem span:first-of-type {
+  color: #242526;
+  font-weight: 800;
+}
+.recentStripAge {
+  color: #9a9b9d !important;
+  font-weight: 400 !important;
+}
+
+@media (max-width: 620px) {
+  .recentStrip {
+    display: none;
+  }
+}

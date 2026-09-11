@@ -1,6 +1,23 @@
 # 阶段 5 准备进度
 
-更新时间：2026-09-09（候选录入收尾；阶段 5 执行待真实数据）
+更新时间：2026-09-11（首页/详情可用性优化 8 项完成）
+
+## 首页/详情可用性优化（2026-09-11）
+
+- [x] 可信度派生：`lib/trust.ts` + `VerificationLevel` 增加「中可信」+ `toPlace` 按餐食派生（修掉写死「高可信」bug）+ `trust-badge` 分级配色 + 卡片可信摘要行。
+- [x] 新鲜度四档：`lib/freshness.ts` 唯一分档来源，DTO 输出 `近期核验/有效/可能过期/已过期` + `ageDays`，卡片相对时间文案与配色，覆盖 30/31/90/91/180/181 边界。
+- [x] 品类 emoji：`lib/category-emoji.ts` + 店名前 emoji，地图点位不改。
+- [x] 距离常显：`withRegionDistance`/`formatDistance`，非 nearby 按视野中心附加，nearby 不重复叠加，卡片「距你/距中心」。
+- [x] 可移除筛选 chips 与「我的附近」按钮。
+- [x] 价格变动标记：`previousPriceFen`/`priceChange` 派生，卡片 ↑↓、详情「较上次/首次核验」，覆盖上涨/下降/持平/首次/多历史/合并。
+- [x] 最近核验入口：`listRecentlyVerified` + `GET /api/v1/recent` + `recent-strip`，空/错误/待共建静默隐藏。
+- [x] 文档：`DECISIONS.md`（8 采纳/3 优先修/11 不采纳/13 不做）、`shenzhen-budget-map-system-plan.md` §10 API 增补 `/api/v1/recent` 与新 DTO 字段。
+
+验证结果（2026-09-11）：
+- `npm run lint`、`npm run typecheck`、`npm run build`：通过。
+- `npm test`：通过，16 个文件 93 个测试（新增 trust/freshness/category-emoji/price-change/recent 及 filter 距离）。
+- `npm run test:e2e`：通过，34/34（移动端 + 桌面端）。
+- `scripts/home-usability-visual-audit.py`：通过，375px 与 1440px 首页无横向溢出、无浏览器控制台错误；截图见 `artifacts/home-usability/home-375.png`、`artifacts/home-usability/home-1440.png`。「最近核验」条在演示数据（距今 >7 天）下按预期静默隐藏；用临时新鲜数据验证其渲染为「店名 · 最低价 · 今天核验」且无溢出。
 
 ## 候选录入链路收尾 + 阶段 5 状态更新（2026-09-09）
 
