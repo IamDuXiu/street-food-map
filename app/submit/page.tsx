@@ -5,13 +5,12 @@ import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
 import type { Place } from '@/lib/types';
 import { submissionSchema } from '@/lib/server/validation';
+import { Notice } from '@/components/ui/Notice';
+import { submissionTypeLabels } from '@/lib/presentation';
 
 type SubmissionType = 'new_place' | 'new_price' | 'correction' | 'closure';
 const labels: Record<SubmissionType, string> = {
-  new_place: '发现新饭点',
-  new_price: '价格有变化',
-  correction: '地点有纠错',
-  closure: '地点已停业',
+  ...submissionTypeLabels,
 };
 const methods = [
   { value: 'onsite_menu', label: '现场菜单或价签' },
@@ -36,6 +35,8 @@ export default function SubmitPage() {
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
+  const [retryBusy, setRetryBusy] = useState(false);
+  const [retryNotice, setRetryNotice] = useState('');
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialType = params.get('type');
@@ -177,72 +178,80 @@ export default function SubmitPage() {
     }
   }
   async function retryFailedUploads() {
-    if (!submitted || submitted.retryFiles.length === 0) return;
+    if (retryBusy || !submitted || submitted.retryFiles.length === 0) return;
+    setRetryBusy(true);
+    setRetryNotice('');
     const remaining: File[] = [];
-    for (const file of submitted.retryFiles) {
-      const upload = new FormData();
-      upload.set('file', file);
-      upload.set('rightsConfirmed', 'true');
-      const response = await fetch(
-        `/api/v1/submissions/${submitted.id}/media`,
-        {
-          method: 'POST',
-          headers: { 'x-upload-token': submitted.token },
-          body: upload,
-        },
-      );
-      if (!response.ok) remaining.push(file);
+    try {
+      for (const file of submitted.retryFiles) {
+        try {
+          const upload = new FormData();
+          upload.set('file', file);
+          upload.set('rightsConfirmed', 'true');
+          const response = await fetch(
+            `/api/v1/submissions/${submitted.id}/media`,
+            {
+              method: 'POST',
+              headers: { 'x-upload-token': submitted.token },
+              body: upload,
+            },
+          );
+          if (!response.ok) remaining.push(file);
+        } catch {
+          remaining.push(file);
+        }
+      }
+      setSubmitted({
+        ...submitted,
+        retryFiles: remaining,
+        failedCount: remaining.length,
+      });
+      setRetryNotice(remaining.length ? `还有 ${remaining.length} 张图片未上传成功，请稍后重试。` : '图片已全部上传。');
+    } finally {
+      setRetryBusy(false);
     }
-    setSubmitted({
-      ...submitted,
-      retryFiles: remaining,
-      failedCount: remaining.length,
-    });
   }
   if (submitted)
     return (
       <>
         <SiteHeader />
-        <main className="success-shell">
-          <div className="success-stamp">
-            已收件
-            <br />
-            <span>THANK YOU</span>
+        <main className="success-shell public-shell public-page">
+          <div className="public-page-heading">
+            <p className="kicker">投稿已收到</p>
+            <h1>等待核验。</h1>
           </div>
-          <p className="kicker">你的饭桌情报已进入审核队列</p>
-          <h1>
-            收到。
-            <br />
-            <em>这顿饭我们会替大家核一下。</em>
-          </h1>
           <p>投稿不会立刻出现在地图上。查询码只显示这一次，请现在保存。</p>
           {submitted.failedCount > 0 && (
-            <p className="data-notice" role="alert">
+            <Notice tone="error" className="data-notice">
               有 {submitted.failedCount}{' '}
               张图片没有上传成功，投稿本身已保留。请点击下面按钮重试，或稍后重新选择图片提交。
               <button
                 className="row-action"
                 type="button"
                 onClick={retryFailedUploads}
+                disabled={retryBusy}
               >
-                重试未成功图片
+                {retryBusy ? '图片上传中…' : '重试未成功图片'}
               </button>
-            </p>
+            </Notice>
           )}
+          {retryNotice && <Notice tone={submitted.failedCount > 0 ? 'error' : 'success'}>{retryNotice}</Notice>}
           <div className="success-code">
             <span>查询码（只显示一次）</span>
             <strong>{submitted.code}</strong>
             <small>不要把查询码当作图片上传令牌；可用它查询审核状态。</small>
           </div>
-          <Link
-            className="primary-button"
-            href={`/submit/status?code=${encodeURIComponent(submitted.code)}`}
-          >
-            查询投稿状态
-          </Link>
-          <Link className="secondary-button" href="/">
-            回到地图找饭 <span>↗</span>
-          </Link>
+          <div className="public-actions">
+            <Link
+              className="primary-button"
+              href={`/submit/status?code=${encodeURIComponent(submitted.code)}`}
+            >
+              查询投稿状态
+            </Link>
+            <Link className="secondary-button" href="/">
+              回到地图找饭 <span>↗</span>
+            </Link>
+          </div>
         </main>
       </>
     );
@@ -250,28 +259,23 @@ export default function SubmitPage() {
   return (
     <>
       <SiteHeader />
-      <main className="form-shell">
+      <main className="form-shell public-shell public-page">
         <Link href="/" className="back-link">
           ← 回到地图
         </Link>
         <div className="form-heading">
-          <p className="kicker">匿名投稿 / 让这座城更好吃</p>
-          <h1>
-            你今天吃到的，
-            <br />
-            <em>也许正是别人要找的。</em>
-          </h1>
-          <p>
-            只收集核验所需的信息，不需要姓名、电话或登录。投稿成功不等于立刻公开。
-          </p>
+          <p className="kicker">匿名投稿</p>
+          <h1>报一条饭签。</h1>
+          <p>填写具体餐食、价格和核验日期。不需要姓名、电话或登录，投稿成功后会进入审核。</p>
         </div>
-        <form className="submission-form" onSubmit={submit} aria-describedby="submission-form-error">
+        <form className="submission-form" onSubmit={submit} aria-describedby="submission-form-error" aria-busy={busy}>
           <input
             name="website"
             tabIndex={-1}
             autoComplete="off"
             aria-hidden="true"
             className="honeypot"
+            hidden
           />
           <fieldset>
             <legend>01 · 你想告诉我们什么？</legend>
@@ -518,9 +522,9 @@ export default function SubmitPage() {
           <button className="primary-button" type="submit" disabled={busy}>
             {busy ? '提交中…' : '提交这条饭签'} <span>↗</span>
           </button>
-          <p id="submission-form-error" className="form-notice" role="alert" aria-live="assertive" hidden={!notice}>
-            {notice || ' '}
-          </p>
+          <div id="submission-form-error" hidden={!notice}>
+            {notice && <Notice tone="error" className="form-notice">{notice}</Notice>}
+          </div>
         </form>
       </main>
     </>

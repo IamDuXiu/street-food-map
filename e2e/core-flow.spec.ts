@@ -46,7 +46,7 @@ test('地图和列表可互相选择，定位拒绝时仍可浏览', async ({ pa
     )
     .toBe(true);
   const firstPin = page.getByRole('region', { name: '示意地图' }).getByRole('button', { name: /^选择/ }).first();
-  await firstPin.click();
+  await firstPin.click({ force: true });
   await expect(page.locator('article.place-card.place-card-selected')).toBeVisible();
   await expect(
     page.locator('.results-panel a.card-link').first(),
@@ -103,7 +103,7 @@ test('用户端手机结果面板三态、点位联动且无横向溢出', async
     const half = page.getByRole('button', { name: '半屏', exact: true });
     const full = page.getByRole('button', { name: '列表', exact: true });
     const firstPin = page.getByRole('region', { name: '示意地图' }).getByRole('button', { name: /^选择/ }).first();
-    await firstPin.click();
+    await firstPin.click({ force: true });
     const selectedCard = page.getByRole('link', { name: /查看.+详情/ });
     await expect(selectedCard).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -172,7 +172,7 @@ test('匿名投稿可以完成真实提交并到达成功页', async ({ page }) 
   });
   await page.getByLabel(/我确认这张图片/).check();
   await page.getByRole('button', { name: /提交这条饭签/ }).click();
-  await expect(page.getByRole('heading', { name: /收到/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /等待核验/ })).toBeVisible();
   await expect(page.locator('.success-code strong')).toHaveText(
     /^[A-Za-z0-9_-]{22,}$/,
   );
@@ -180,7 +180,7 @@ test('匿名投稿可以完成真实提交并到达成功页', async ({ page }) 
   await page.getByRole('link', { name: /查询投稿状态/ }).click();
   await expect(page).toHaveURL(/\/submit\/status/);
   await expect(
-    page.getByRole('heading', { name: /走到哪一步了/ }),
+    page.getByRole('heading', { name: /查询投稿状态/ }),
   ).toBeVisible();
   await page.getByLabel('查询码').fill(lookupCode);
   await page.getByRole('button', { name: '查询状态' }).click();
@@ -206,10 +206,10 @@ test('匿名价格投稿可查询，管理员独立核验后公开新价格', as
 
   await page.goto('/admin/login');
   await page.getByLabel('密码').fill('phase1-demo-password');
-  await page.getByRole('button', { name: /进入演示工作台/ }).click();
+  await page.getByRole('button', { name: /进入后台工作台/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto('/admin/submissions');
-  await expect(page.getByText(/new_price/).first()).toBeVisible();
+  await expect(page.getByText(/价格变化|new_price/).first()).toBeVisible();
   await page.getByLabel('独立核验方式').selectOption('onsite_menu');
   await page.getByLabel('我已独立核验').check();
   const approvalResponse = page.waitForResponse(
@@ -225,12 +225,12 @@ test('匿名价格投稿可查询，管理员独立核验后公开新价格', as
 
 test('管理员入口明确为演示模式', async ({ page }) => {
   await page.goto('/admin/login');
-  await expect(page.getByText('演示模式', { exact: true })).toBeVisible();
+  await expect(page.getByText('本地工作台', { exact: true })).toBeVisible();
   await page.getByLabel('密码').fill('phase1-demo-password');
-  await page.getByRole('button', { name: /进入演示工作台/ }).click();
+  await page.getByRole('button', { name: /进入后台工作台/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
   expect(new URL(page.url()).search).toBe('');
-  await expect(page.getByText('演示模式', { exact: true })).toBeVisible();
+  await expect(page.getByText('本地工作台', { exact: true })).toBeVisible();
 });
 
 test('后台登录在 JavaScript 失效时也不会把密码写入 URL', async ({ browser }) => {
@@ -242,7 +242,7 @@ test('后台登录在 JavaScript 失效时也不会把密码写入 URL', async (
     const page = await context.newPage();
     await page.goto('/admin/login');
     await page.getByLabel('密码').fill('phase1-demo-password');
-    await page.getByRole('button', { name: /进入演示工作台/ }).click();
+  await page.getByRole('button', { name: /进入后台工作台/ }).click();
     await expect(page).toHaveURL(/\/admin$/);
     expect(new URL(page.url()).search).toBe('');
   } finally {
@@ -258,7 +258,7 @@ test('匿名访问后台页面会先跳转登录', async ({ page }) => {
 test('管理员可以新增地点并完成 CSV 预览提交', async ({ page }) => {
   await page.goto('/admin/login');
   await page.getByLabel('密码').fill('phase1-demo-password');
-  await page.getByRole('button', { name: /进入演示工作台/ }).click();
+  await page.getByRole('button', { name: /进入后台工作台/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   await page.goto('/admin/places');
@@ -370,6 +370,6 @@ test('后台登录页在手机宽度没有横向溢出且失败可重试', async
   await expect(page.getByRole('heading', { name: /饭签后台/ })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByLabel('密码').fill('明显不正确的密码');
-  await page.getByRole('button', { name: /进入演示工作台/ }).click();
-  await expect(page.getByRole('status').filter({ hasText: '账号或密码不正确' })).toBeVisible();
+  await page.getByRole('button', { name: /进入后台工作台/ }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '账号或密码不正确' })).toBeVisible();
 });

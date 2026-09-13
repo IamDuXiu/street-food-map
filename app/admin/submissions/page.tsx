@@ -8,6 +8,7 @@ import { listSubmissionMedia, listSubmissions } from '@/lib/server/repository';
 import { requireAdminPage } from '@/lib/server/page-auth';
 import Image from 'next/image';
 import Link from 'next/link';
+import { submissionStatusLabel, submissionTypeLabel, verificationMethodLabel } from '@/lib/presentation';
 
 export default async function SubmissionsPage({
   searchParams,
@@ -40,7 +41,7 @@ export default async function SubmissionsPage({
               key={item.id}
             >
               <span className="inbox-type">
-                {item.type} · #{item.id.slice(-6)}
+                {submissionTypeLabel(item.type)} · #{item.id.slice(-6)}
               </span>
               <h2>
                 {item.target_place_id ||
@@ -60,7 +61,7 @@ export default async function SubmissionsPage({
                       '待处理投稿',
                   )}
               </h2>
-              <p>{item.review_note || `状态：${item.status}`}</p>
+              <p>{item.review_note || `状态：${submissionStatusLabel(item.status)}`}</p>
               <small>
                 投稿于 {item.created_at.slice(0, 16).replace('T', ' · ')}
               </small>
@@ -69,7 +70,7 @@ export default async function SubmissionsPage({
         </section>
         {active ? (
           <aside className="review-detail">
-            <p className="kicker">投稿详情 / {active.type}</p>
+            <p className="kicker">投稿详情 / {submissionTypeLabel(active.type)}</p>
             <h2>
               {String(
                 payload.placeName ||
@@ -80,13 +81,13 @@ export default async function SubmissionsPage({
             </h2>
             <dl>
               <dt>状态</dt>
-              <dd>{active.status}</dd>
+              <dd>{submissionStatusLabel(active.status)}</dd>
               <dt>投稿编号</dt>
               <dd>{active.id}</dd>
               <dt>核验日期</dt>
               <dd>{String(payload.observedAt || '未提供')}</dd>
               <dt>声称方式</dt>
-              <dd>{String(payload.claimedVerificationMethod || '未提供')}</dd>
+              <dd>{verificationMethodLabel(String(payload.claimedVerificationMethod || ''))}</dd>
             </dl>
             {media.length > 0 && (
               <div className="submission-media-grid">

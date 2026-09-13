@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Notice, type NoticeTone } from '@/components/ui/Notice';
+
+type ActionNotice = { tone: NoticeTone; message: string };
+const leadStatusLabels: Record<string, string> = { new: '待处理', verifying: '待核验', converted: '已导入', rejected: '已跳过', duplicate: '重复' };
 
 async function csrf() {
   const response = await fetch('/api/v1/admin/csrf');
@@ -11,7 +16,7 @@ async function csrf() {
 
 export function MediaReviewActions({ id }: { id: string }) {
   const router = useRouter();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   async function update(body: Record<string, string>) {
@@ -24,16 +29,16 @@ export function MediaReviewActions({ id }: { id: string }) {
         body: JSON.stringify(body),
       });
       if (!response.ok) throw new Error('请先完成权利、隐私和正式事实检查');
-      setNotice('已记录隐私检查');
+      setNotice({ tone: 'success', message: '已记录隐私检查' });
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '图片更新失败');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '图片更新失败' });
     } finally { setBusy(false); }
   }
   async function replace(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file) {
-      setNotice('请选择脱敏替代图');
+      setNotice({ tone: 'error', message: '请选择脱敏替代图' });
       return;
     }
     setBusy(true);
@@ -51,10 +56,10 @@ export function MediaReviewActions({ id }: { id: string }) {
       if (!response.ok) throw new Error('替代图上传失败');
       setFile(null);
       event.currentTarget.reset();
-      setNotice('替代图已保存为私有，待人工复核');
+      setNotice({ tone: 'success', message: '替代图已保存为私有，待人工复核' });
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '替代图上传失败');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '替代图上传失败' });
     } finally { setBusy(false); }
   }
   return (
@@ -80,7 +85,7 @@ export function MediaReviewActions({ id }: { id: string }) {
           {busy ? '处理中…' : '上传替代图'}
         </button>
       </form>
-      {notice && <small role="status">{notice}</small>}
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
     </div>
   );
 }
@@ -124,17 +129,18 @@ export function SubmissionActions({
   media?: Array<{ id: string }>;
 }) {
   const router = useRouter();
-  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
   const [method, setMethod] = useState('onsite_menu');
   const [observedAt, setObservedAt] = useState(
     new Date().toISOString().slice(0, 10),
   );
   const [independent, setIndependent] = useState(false);
   const [publicMediaIds, setPublicMediaIds] = useState<string[]>([]);
-  const [busy, setBusy] = useState(false);
+  const [pendingDecision, setPendingDecision] = useState<Exclude<Parameters<typeof decide>[0], 'approved' | 'needs_verification'> | null>(null);
   async function decide(
     decision: 'approved' | 'needs_verification' | 'rejected' | 'duplicate',
-  ) {
+  ): Promise<boolean> {
     setBusy(true);
     try {
       const token = await csrf();
@@ -157,19 +163,19 @@ export function SubmissionActions({
         headers: { 'content-type': 'application/json', 'x-csrf-token': token },
         body: JSON.stringify(body),
       });
-      if (!response.ok) throw new Error('操作失败');
-      setNotice(
-        decision === 'approved'
-          ? '已通过'
-          : decision === 'rejected'
-            ? '已拒绝'
-            : decision === 'duplicate'
-              ? '已标记重复'
-              : '已转待核验',
-      );
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error?.message || '操作失败，投稿状态未改变');
+      }
+      setNotice({
+        tone: 'success',
+        message: decision === 'approved' ? '已通过' : decision === 'rejected' ? '已拒绝' : decision === 'duplicate' ? '已标记重复' : '已转待核验',
+      });
       router.refresh();
+      return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '操作失败');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '操作失败，投稿状态未改变' });
+      return false;
     } finally { setBusy(false); }
   }
   const reviewPrompt =
@@ -182,6 +188,13 @@ export function SubmissionActions({
           : type === 'closure'
             ? '确认营业状态变化'
             : '确认投稿内容';
+  function requestDecision(decision: Parameters<typeof decide>[0]) {
+    if (decision === 'rejected' || decision === 'duplicate') {
+      setPendingDecision(decision);
+      return;
+    }
+    void decide(decision);
+  }
   if (!['pending', 'needs_verification'].includes(status ?? ''))
     return <p className="review-warning">这条投稿已完成处理，不能再次审批。</p>;
   return (
@@ -241,7 +254,7 @@ export function SubmissionActions({
         className="primary-button"
         type="button"
         disabled={busy}
-        onClick={() => decide('approved')}
+        onClick={() => requestDecision('approved')}
       >
         通过
       </button>
@@ -249,7 +262,7 @@ export function SubmissionActions({
         className="secondary-button"
         type="button"
         disabled={busy}
-        onClick={() => decide('needs_verification')}
+        onClick={() => requestDecision('needs_verification')}
       >
         标记待核验
       </button>
@@ -257,7 +270,7 @@ export function SubmissionActions({
         className="secondary-button"
         type="button"
         disabled={busy}
-        onClick={() => decide('duplicate')}
+        onClick={() => requestDecision('duplicate')}
       >
         重复
       </button>
@@ -265,60 +278,92 @@ export function SubmissionActions({
         className="danger-button"
         type="button"
         disabled={busy}
-        onClick={() => decide('rejected')}
+        onClick={() => requestDecision('rejected')}
       >
         拒绝投稿
       </button>
-      {notice && <small role="status">{notice}</small>}
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+      <ConfirmDialog
+        open={pendingDecision !== null}
+        title={pendingDecision === 'rejected' ? '拒绝这条投稿？' : '标记为重复？'}
+        onCancel={() => setPendingDecision(null)}
+        onConfirm={async () => {
+          if (!pendingDecision) return;
+          const decision = pendingDecision;
+          if (await decide(decision)) setPendingDecision(null);
+          else throw new Error('ACTION_FAILED');
+        }}
+        confirmLabel={pendingDecision === 'rejected' ? '确认拒绝' : '确认标记重复'}
+      >
+        {pendingDecision === 'rejected' ? '拒绝后投稿不会公开，后续需要重新提交才能再次审核。' : '标记后该投稿将按重复记录处理，确认已与现有地点或价格对应。'}
+      </ConfirmDialog>
     </div>
   );
 }
 
 export function ExportButton() {
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  const [busy, setBusy] = useState(false);
   return (
-    <button
-      className="primary-button small-button"
-      type="button"
-      onClick={async () => {
-        setNotice('生成中…');
-        const response = await fetch('/api/v1/admin/exports/full');
-        const body = await response.json();
-        setNotice(
-          response.ok
-            ? `已生成 ${String(body.data.path).split('/').pop()}`
-            : '备份失败',
-        );
-      }}
-    >
-      {notice || '生成新备份'}
-    </button>
+    <div className="admin-action-feedback">
+      <button
+        className="primary-button small-button"
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+        setBusy(true);
+        setNotice({ tone: 'info', message: '生成中…' });
+        try {
+          const response = await fetch('/api/v1/admin/exports/full');
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(body.error?.message || '备份失败，未生成文件');
+          setNotice({ tone: 'success', message: `已生成 ${String(body.data?.path || '备份文件').split('/').pop()}` });
+        } catch (error) {
+          setNotice({ tone: 'error', message: error instanceof Error ? error.message : '备份失败，未生成文件' });
+        } finally {
+          setBusy(false);
+        }
+        }}
+      >
+        {busy ? '生成中…' : '生成新备份'}
+      </button>
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+    </div>
   );
 }
 
 export function LeadForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  const [busy, setBusy] = useState(false);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = new FormData(event.currentTarget);
-    const token = await csrf();
-    const response = await fetch('/api/v1/admin/leads', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-csrf-token': token },
-      body: JSON.stringify({
-        sourcePlatform: 'other',
-        cluePlaceName: form.get('place'),
-        clueItemName: form.get('item'),
-        summary: form.get('summary'),
-        sourceUrl: form.get('url'),
-      }),
-    });
-    setNotice(response.ok ? '线索已新增并记录审计' : '请检查填写内容');
-    if (response.ok) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const token = await csrf();
+      const response = await fetch('/api/v1/admin/leads', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-csrf-token': token },
+        body: JSON.stringify({
+          sourcePlatform: 'other',
+          cluePlaceName: form.get('place'),
+          clueItemName: form.get('item'),
+          summary: form.get('summary'),
+          sourceUrl: form.get('url'),
+        }),
+      });
+      if (!response.ok) throw new Error('请检查填写内容，线索未保存');
+      setNotice({ tone: 'success', message: '线索已新增并记录审计' });
       setOpen(false);
       router.refresh();
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '线索未保存' });
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -341,8 +386,8 @@ export function LeadForm() {
             备注
             <textarea name="summary" rows={2} />
           </label>
-          <button className="primary-button" type="submit">
-            保存线索
+          <button className="primary-button" type="submit" disabled={busy}>
+            {busy ? '保存中…' : '保存线索'}
           </button>
           <button
             className="secondary-button"
@@ -351,16 +396,15 @@ export function LeadForm() {
           >
             取消
           </button>
-          {notice && <small role="status">{notice}</small>}
+          {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
         </form>
       ) : (
-        <button
-          className="primary-button small-button"
-          type="button"
-          onClick={() => setOpen(true)}
-        >
-          ＋ 新增线索
-        </button>
+        <div className="admin-action-feedback">
+          <button className="primary-button small-button" type="button" onClick={() => { setNotice(null); setOpen(true); }}>
+            ＋ 新增线索
+          </button>
+          {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+        </div>
       )}
     </>
   );
@@ -369,31 +413,38 @@ export function LeadForm() {
 export function PlaceCreateForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  const [busy, setBusy] = useState(false);
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = new FormData(event.currentTarget);
-    const token = await csrf();
-    const response = await fetch('/api/v1/admin/places', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-csrf-token': token },
-      body: JSON.stringify({
-        zoneId: 'sz university',
-        name: form.get('name'),
-        address: form.get('address'),
-        lng: Number(form.get('lng')),
-        lat: Number(form.get('lat')),
-        category: '街边快餐',
-        accessType: 'public',
-        tags: [],
-      }),
-    });
-    setNotice(
-      response.ok ? '地点已新增并记录审计' : '保存失败：请检查坐标或重复候选',
-    );
-    if (response.ok) {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const token = await csrf();
+      const response = await fetch('/api/v1/admin/places', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-csrf-token': token },
+        body: JSON.stringify({
+          zoneId: 'sz university',
+          name: form.get('name'),
+          address: form.get('address'),
+          lng: Number(form.get('lng')),
+          lat: Number(form.get('lat')),
+          category: '街边快餐',
+          accessType: 'public',
+          tags: [],
+        }),
+      });
+      if (!response.ok) throw new Error('保存失败：请检查坐标或重复候选');
+      setNotice({ tone: 'success', message: '地点已新增并记录审计' });
       setOpen(false);
       router.refresh();
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '地点未保存' });
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -428,8 +479,8 @@ export function PlaceCreateForm() {
               required
             />
           </label>
-          <button className="primary-button" type="submit">
-            保存地点
+          <button className="primary-button" type="submit" disabled={busy}>
+            {busy ? '保存中…' : '保存地点'}
           </button>
           <button
             className="secondary-button"
@@ -438,16 +489,15 @@ export function PlaceCreateForm() {
           >
             取消
           </button>
-          {notice && <small role="status">{notice}</small>}
+          {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
         </form>
       ) : (
-        <button
-          className="primary-button small-button"
-          type="button"
-          onClick={() => setOpen(true)}
-        >
-          ＋ 新增地点
-        </button>
+        <div className="admin-action-feedback">
+          <button className="primary-button small-button" type="button" onClick={() => { setNotice(null); setOpen(true); }}>
+            ＋ 新增地点
+          </button>
+          {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+        </div>
       )}
     </>
   );
@@ -461,31 +511,51 @@ export function PlaceStatusButton({
   archived?: boolean;
 }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  async function updateStatus(): Promise<boolean> {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const token = await csrf();
+      const response = await fetch(`/api/v1/admin/places/${id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json', 'x-csrf-token': token },
+        body: JSON.stringify({ recordStatus: archived ? 'active' : 'archived' }),
+      });
+      if (!response.ok) throw new Error(archived ? '恢复失败，地点状态未改变' : '归档失败，地点状态未改变');
+      setNotice({ tone: 'success', message: archived ? '地点已恢复' : '地点已归档' });
+      router.refresh();
+      return true;
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '地点状态未改变' });
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <button
-      className="row-action"
-      type="button"
-      onClick={async () => {
-        const token = await csrf();
-        await fetch(`/api/v1/admin/places/${id}`, {
-          method: 'PATCH',
-          headers: {
-            'content-type': 'application/json',
-            'x-csrf-token': token,
-          },
-          body: JSON.stringify({
-            recordStatus: archived ? 'active' : 'archived',
-          }),
-        });
-        router.refresh();
-      }}
-    >
-      {archived ? '恢复' : '归档'}
-    </button>
+    <div className="admin-action-feedback">
+      <button className="row-action" type="button" disabled={busy} onClick={() => setOpen(true)}>
+        {busy ? '处理中…' : archived ? '恢复' : '归档'}
+      </button>
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+      <ConfirmDialog
+        open={open}
+        title={archived ? '恢复这个地点？' : '归档这个地点？'}
+        onCancel={() => setOpen(false)}
+        onConfirm={async () => { if (await updateStatus()) setOpen(false); else throw new Error('ACTION_FAILED'); }}
+        confirmLabel={archived ? '确认恢复' : '确认归档'}
+      >
+        {archived ? '恢复后地点会重新进入后台管理列表，请确认资料仍然有效。' : '归档后地点将不再作为当前可用记录，请确认这是你的最终判断。'}
+      </ConfirmDialog>
+    </div>
   );
 }
 export function MergePreview({ placeId }: { placeId: string }) {
   const [duplicateId, setDuplicateId] = useState('');
+  const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<{
     version: string;
     duplicate: { name: string };
@@ -496,8 +566,12 @@ export function MergePreview({ placeId }: { placeId: string }) {
     leads: number;
     submissions: number;
   } | null>(null);
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  const [busy, setBusy] = useState(false);
   async function run(confirm = false) {
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
     try {
       const token = await csrf();
       const response = await fetch(`/api/v1/admin/places/${placeId}`, {
@@ -509,21 +583,27 @@ export function MergePreview({ placeId }: { placeId: string }) {
           ...(confirm ? { confirm: true, version: preview?.version } : {}),
         }),
       });
-      const body = await response.json();
-      if (!response.ok && !body.data) throw new Error('预览失败');
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok && !body.data) throw new Error(confirm ? '合并失败，地点未改变' : '预览失败');
       if (confirm && response.ok) {
-        setNotice('已合并并记录审计');
+        setNotice({ tone: 'success', message: '已合并并记录审计' });
         setPreview(null);
       } else {
         setPreview(body.data);
-        setNotice('请确认以下影响后再合并');
+        setNotice({ tone: 'info', message: '请确认以下影响后再合并' });
       }
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '操作失败');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '操作失败，地点未改变' });
+    } finally {
+      setBusy(false);
     }
   }
   return (
     <div className="admin-merge">
+      <button className="row-action" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        {open ? '收起合并' : '合并地点'}
+      </button>
+      {open && <>
       <label>
         疑似重复地点 ID
         <input
@@ -535,7 +615,7 @@ export function MergePreview({ placeId }: { placeId: string }) {
       <button
         className="row-action"
         type="button"
-        disabled={!duplicateId}
+        disabled={!duplicateId || busy}
         onClick={() => run(false)}
       >
         预览合并
@@ -552,13 +632,15 @@ export function MergePreview({ placeId }: { placeId: string }) {
           <button
             className="danger-button"
             type="button"
+            disabled={busy}
             onClick={() => run(true)}
           >
             确认合并
           </button>
         </div>
       )}
-      {notice && <small>{notice}</small>}
+      </>}
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
     </div>
   );
 }
@@ -570,6 +652,8 @@ export function LeadStatusButton({
   status: string;
 }) {
   const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
   const next =
     status === 'new'
       ? 'verifying'
@@ -577,24 +661,35 @@ export function LeadStatusButton({
         ? 'converted'
         : 'new';
   return (
-    <button
-      className="row-action"
-      type="button"
-      onClick={async () => {
-        const token = await csrf();
-        await fetch('/api/v1/admin/leads', {
-          method: 'PATCH',
-          headers: {
-            'content-type': 'application/json',
-            'x-csrf-token': token,
-          },
-          body: JSON.stringify({ id, patch: { status: next } }),
-        });
-        router.refresh();
-      }}
-    >
-      → {next}
-    </button>
+    <div className="admin-action-feedback">
+      <button
+        className="row-action"
+        type="button"
+        disabled={busy}
+        onClick={async () => {
+        setBusy(true);
+        setNotice(null);
+        try {
+          const token = await csrf();
+          const response = await fetch('/api/v1/admin/leads', {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json', 'x-csrf-token': token },
+            body: JSON.stringify({ id, patch: { status: next } }),
+          });
+          if (!response.ok) throw new Error('线索状态未改变，请刷新重试');
+          setNotice({ tone: 'success', message: `已更新为${leadStatusLabels[next] ?? next}` });
+          router.refresh();
+        } catch (error) {
+          setNotice({ tone: 'error', message: error instanceof Error ? error.message : '线索状态未改变' });
+        } finally {
+          setBusy(false);
+        }
+        }}
+      >
+        {busy ? '处理中…' : `→ ${leadStatusLabels[next] ?? next}`}
+      </button>
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+    </div>
   );
 }
 
@@ -606,11 +701,15 @@ export function PlaceEditor({
   menuItemId?: string;
 }) {
   const router = useRouter();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<ActionNotice | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     const form = new FormData(event.currentTarget);
-    setNotice('保存中…');
+    setBusy(true);
+    setNotice({ tone: 'info', message: '保存中…' });
     try {
       const token = await csrf();
       const endpoint = menuItemId
@@ -634,15 +733,22 @@ export function PlaceEditor({
         headers: { 'content-type': 'application/json', 'x-csrf-token': token },
         body: JSON.stringify(body),
       });
-      if (!response.ok) throw new Error('请检查填写内容');
-      setNotice('已保存并写入审计');
+      if (!response.ok) throw new Error('请检查填写内容，数据未保存');
+      setNotice({ tone: 'success', message: '已保存并写入审计' });
+      setOpen(false);
       router.refresh();
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '保存失败');
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : '保存失败，数据未改变' });
+    } finally {
+      setBusy(false);
     }
   }
   return (
-    <form className="admin-inline-form" onSubmit={save}>
+    <div className="admin-editor">
+      <button className="row-action" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+        {open ? '收起' : menuItemId ? '编辑价格' : '新增餐食'}
+      </button>
+      {open && <form className="admin-inline-form" onSubmit={save}>
       {menuItemId ? (
         <>
           <label>
@@ -665,8 +771,8 @@ export function PlaceEditor({
               required
             />
           </label>
-          <button className="secondary-button" type="submit">
-            替换价格
+          <button className="secondary-button" type="submit" disabled={busy}>
+            {busy ? '保存中…' : '替换价格'}
           </button>
         </>
       ) : (
@@ -675,12 +781,14 @@ export function PlaceEditor({
             新增餐食
             <input name="name" placeholder="例如：两荤一素" required />
           </label>
-          <button className="secondary-button" type="submit">
-            新增餐食
+          <button className="secondary-button" type="submit" disabled={busy}>
+            {busy ? '保存中…' : '新增餐食'}
           </button>
         </>
       )}
-      {notice && <small role="status">{notice}</small>}
-    </form>
+      {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+      </form>}
+      {!open && notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
+    </div>
   );
 }

@@ -6,7 +6,6 @@ export function SiteHeader() {
       <Link className="wordmark" href="/" aria-label="饭签首页">
         <span className="wordmark-mark">饭</span>
         <span>街头饭签</span>
-        <small>SHENZHEN / 01</small>
       </Link>
       <nav className="site-nav" aria-label="主要导航">
         <Link href="/about">规则</Link>
@@ -20,7 +19,7 @@ export function AdminHeader() {
   return (
     <header className="admin-header">
       <Link className="wordmark" href="/admin" aria-label="饭签后台总览"><span className="wordmark-mark">饭</span><span>饭签后台</span></Link>
-      <span className="demo-pill"><span className="status-dot" />演示模式</span>
+      <span className="demo-pill"><span className="status-dot" />本地工作台</span>
     </header>
   );
 }

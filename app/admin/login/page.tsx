@@ -2,12 +2,14 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminHeader } from '@/components/site-header';
+import { Notice, type NoticeTone } from '@/components/ui/Notice';
 
 const loginErrorMessage = '账号或密码不正确';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [notice, setNotice] = useState('');
+  const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -36,6 +38,9 @@ export default function AdminLoginPage() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setNotice(null);
     const form = new FormData(event.currentTarget);
 
     try {
@@ -49,15 +54,17 @@ export default function AdminLoginPage() {
       });
 
       if (response.ok) {
-        setNotice('登录成功，正在打开工作台……');
+        setNotice({ tone: 'success', message: '登录成功，正在打开工作台……' });
         router.push('/admin');
         return;
       }
 
       const body = await response.json().catch(() => ({}));
-      setNotice(body.error?.message || loginErrorMessage);
+      setNotice({ tone: 'error', message: body.error?.message || loginErrorMessage });
     } catch {
-      setNotice('登录请求失败，请检查本地服务是否仍在运行');
+      setNotice({ tone: 'error', message: '登录请求失败，请检查本地服务是否仍在运行' });
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -66,14 +73,14 @@ export default function AdminLoginPage() {
       <AdminHeader />
       <main className="login-shell">
         <div className="login-card">
-          <p className="kicker">管理员入口 / DEMO 01</p>
+          <p className="kicker">管理员入口 / ADMIN</p>
           <h1>
             欢迎回到
             <br />
             <em>饭签后台。</em>
           </h1>
           <p className="login-copy">
-            这里管理核验、投稿和每一份公开价格。阶段1将校验真实本地会话；演示数据不会上传到外部服务。
+            这里管理核验、投稿和每一份公开价格。所有操作都在当前工作区完成，并留下可追溯记录。
           </p>
           <form
             method="post"
@@ -100,15 +107,11 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
               />
             </label>
-            <button className="primary-button" type="submit">
-              进入演示工作台 <span>↗</span>
+            <button className="primary-button" type="submit" disabled={busy}>
+              {busy ? '登录中…' : '进入后台工作台'} <span>↗</span>
             </button>
           </form>
-          {notice && (
-            <p className="form-notice" role="status">
-              {notice}
-            </p>
-          )}
+          {notice && <Notice tone={notice.tone}>{notice.message}</Notice>}
         </div>
         <div className="login-aside">
           <span className="big-mark">饭</span>

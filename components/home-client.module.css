@@ -49,7 +49,7 @@
   gap: 12px;
 }
 
-.sectionLabel { margin: 0; color: #8b8d8f; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.sectionLabel { margin: 0; color: #64686d; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
 .resetButton { min-height: 34px; padding: 0 11px; border: 1px solid #dededb; border-radius: 8px; color: #737579; background: #fff; font-size: 11px; white-space: nowrap; }
 .resetButton:hover { border-color: #242526; color: #242526; }
 
@@ -68,10 +68,10 @@
 .budgetChipActive { border-color: #242526; color: #fff; background: #242526; }
 .filterControl { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 10px; border: 1px solid #e4e4e2; border-radius: 8px; color: #8b8d8f; font-size: 11px; }
 .filterControl select { border: 0; outline: 0; color: #242526; background: transparent; font-size: 11px; font-weight: 700; }
-.filterHint { margin-left: auto; color: #a1a2a3; font-size: 10px; }
-.locateButton, .locateButtonActive { min-height: 34px; padding: 0 11px; border: 1px solid #266b51; border-radius: 8px; color: #266b51; background: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.filterHint { margin-left: auto; color: #64686d; font-size: 12px; }
+.locateButton, .locateButtonActive { min-height: 34px; padding: 0 11px; border: 1px solid #3f7660; border-radius: 8px; color: #2e634e; background: #fff; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .locateButton:hover { border-color: #242526; color: #242526; }
-.locateButtonActive { border-color: #266b51; color: #fff; background: #266b51; }
+.locateButtonActive { border-color: #3f7660; color: #fff; background: #3f7660; }
 .activeFilterRow { display: flex; flex-wrap: wrap; gap: 6px; }
 .activeFilterChip { display: inline-flex; align-items: center; gap: 5px; min-height: 27px; padding: 0 10px; border: 1px solid #d9d9d7; border-radius: 99px; color: #737579; background: #f6f6f4; font-size: 10px; white-space: nowrap; }
 .activeFilterChip:hover { border-color: #242526; color: #242526; }
@@ -87,7 +87,7 @@
 .resultsHeading { align-items: end; justify-content: space-between; min-height: 58px; padding: 0 5px 13px; border-bottom: 1px solid #242526; }
 .resultsHeading h2 { margin: 3px 0 0; font-size: 28px; line-height: 1; letter-spacing: -.06em; }
 .resultsHeading h2 span { color: #8b8d8f; font-size: 12px; letter-spacing: 0; }
-.sortNote { color: #8b8d8f; font-size: 10px; white-space: nowrap; }
+.sortNote { color: #64686d; font-size: 12px; white-space: nowrap; }
 .placeList { display: grid; gap: 0; padding-top: 4px; }
 .placeList :global(.card-link) { min-width: 0; }
 .placeList :global(.place-card) { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: center; min-height: 90px; padding: 9px 5px; border: 0 !important; border-bottom: 1px solid #e8e8e6 !important; border-radius: 0; background: #fff; box-shadow: none !important; }
@@ -98,16 +98,16 @@
 .placeList :global(.place-card-name-row) { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .placeList :global(.place-card-name-row h3) { overflow: hidden; margin: 0; color: #242526; font-size: 14px; font-weight: 800; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
 .placeList :global(.place-card-emoji) { flex: 0 0 auto; font-size: 15px; line-height: 1; }
-.placeList :global(.place-card-trust) { overflow: hidden; margin: 2px 0 0; color: #9a9b9d; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.placeList :global(.place-card-trust) { overflow: hidden; margin: 2px 0 0; color: #64686d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .placeList :global(.arrow) { flex: 0 0 auto; color: #ef806c; font-size: 14px; }
 .placeList :global(.place-card-meal-line) { overflow: hidden; margin: 2px 0 0; color: #737579; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.placeList :global(.place-card-access) { overflow: hidden; margin: 2px 0 0; color: #737579; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.placeList :global(.place-card-meta) { display: flex; gap: 7px; overflow: hidden; margin: 3px 0 0; color: #9a9b9d; font-size: 9px; white-space: nowrap; }
+.placeList :global(.place-card-access) { overflow: hidden; margin: 2px 0 0; color: #64686d; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.placeList :global(.place-card-meta) { display: flex; gap: 7px; overflow: hidden; margin: 3px 0 0; color: #64686d; font-size: 11px; white-space: nowrap; }
 .placeList :global(.place-card-meta span) { overflow: hidden; text-overflow: ellipsis; }
-.placeList :global(.freshness-recent) { color: #266b51; }
+.placeList :global(.freshness-recent) { color: #2e634e; }
 .placeList :global(.freshness-valid) { color: #737579; }
 .placeList :global(.freshness-stale) { color: #8b6710; }
-.placeList :global(.freshness-expired) { color: #b93821; }
+.placeList :global(.freshness-expired) { color: #9b4539; }
 .placeList :global(.place-card-price-cell) { align-self: start; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-top: 2px; }
 .placeList :global(.place-card-price) { color: #242526; font-size: 20px; font-weight: 800; line-height: 1; white-space: nowrap; }
 .mobileSelectedCard { display: none; }
@@ -120,7 +120,7 @@
 .emptyState h3 { margin: 10px 0 5px; color: #242526; font-size: 17px; }
 .emptyState p { margin-bottom: 13px; font-size: 12px; }
 .emptyState button, .emptyLink { border: 0; border-bottom: 1px solid #ef806c; color: #b74d3f; background: transparent; font-size: 11px; font-weight: 700; }
-.listNote { margin: 14px 4px; color: #9a9b9d; font-size: 10px; line-height: 1.55; }
+.listNote { margin: 14px 4px; color: #64686d; font-size: 12px; line-height: 1.55; }
 .listNote a { color: #737579; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 900px) {
@@ -168,8 +168,8 @@
   .placeList { max-height: calc(100% - 64px); overflow-y: auto; padding: 8px 9px 22px; }
   .mobileSelectedCard { display: grid; position: relative; gap: 3px; margin: 8px 9px 0; padding: 10px 84px 10px 11px; border: 1px solid #242526; border-radius: 9px; color: #242526; background: #fff; }
   .mobileSelectedCard strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-  .mobileSelectedCard > span:nth-of-type(2), .mobileSelectedCard > span:nth-of-type(3) { overflow: hidden; color: #737579; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-  .mobileSelectedCardMeta { color: #8b8d8f; font-size: 9px; }
+  .mobileSelectedCard > span:nth-of-type(2), .mobileSelectedCard > span:nth-of-type(3) { overflow: hidden; color: #64686d; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+  .mobileSelectedCardMeta { color: #64686d; font-size: 11px; }
   .mobileSelectedCard b { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); color: #b74d3f; font-size: 10px; }
   .listNote { display: none; }
   .dataNotice { margin: 8px 9px; }

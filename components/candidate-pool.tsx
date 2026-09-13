@@ -9,6 +9,7 @@ import type {
   CandidateItemDto,
 } from '@/lib/candidate-pool';
 import { CoordinatePicker } from '@/components/coordinate-picker';
+import { Notice, type NoticeTone } from '@/components/ui/Notice';
 
 type Zone = { id: string; name: string; audience?: string };
 type CandidateMetadata = Record<string, unknown>;
@@ -253,6 +254,7 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<NoticeTone>('success');
   const [error, setError] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [draftId, setDraftId] = useState('');
@@ -354,6 +356,7 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
     setSelected(nextSelected);
     setDraftId(draft.id);
     setDraftVersion(draft.version);
+    setMessageTone('success');
     setMessage(`已恢复草稿 · ${new Date(draft.updatedAt).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`);
     if (typeof window !== 'undefined') window.localStorage.setItem('candidatePoolDraftId', draft.id);
   }, [stores]);
@@ -402,7 +405,7 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
     restoredRef.current = true;
     const localId = typeof window !== 'undefined' ? window.localStorage.getItem('candidatePoolDraftId') : '';
     const id = initialDraftId || localId;
-    if (id) void fetchDraft(id).catch((reason: unknown) => setMessage(reason instanceof Error ? reason.message : '草稿恢复失败'));
+    if (id) void fetchDraft(id).catch((reason: unknown) => { setMessageTone('error'); setMessage(reason instanceof Error ? reason.message : '草稿恢复失败'); });
   }, [fetchDraft, initialDraftId, stores.length]);
 
   async function saveDraft(nextMessage = '草稿已保存') {
@@ -420,6 +423,7 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
       setDraftVersion(Number(body.data.version));
       if (typeof window !== 'undefined') window.localStorage.setItem('candidatePoolDraftId', String(body.data.id));
       setDrafts((current) => [body.data as CandidateDraftDto, ...current.filter((draft) => draft.id !== body.data.id)].slice(0, 8));
+      setMessageTone('success');
       setMessage(nextMessage);
       return body.data as CandidateDraftDto;
     } catch (reason) {
@@ -532,7 +536,7 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
         </select>
       </label>
     </div>
-    {message && <p className="candidate-message" role="status" aria-live="polite">{message}</p>}
+    {message && <Notice tone={messageTone} className="candidate-message">{message}</Notice>}
     {!stores.length ? <div className="candidate-empty"><span className="candidate-empty-mark">⌁</span><h3>还没有候选线索</h3><p>先在项目目录运行种入脚本，再回到这里进行核验。</p><code>npm run seed:candidates</code></div> : <>
       <div className="candidate-columns">
         <section className="candidate-list-panel" aria-label="候选店铺列表">

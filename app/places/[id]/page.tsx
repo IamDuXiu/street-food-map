@@ -10,6 +10,8 @@ import { toPublicPlace } from '@/lib/server/public';
 import { publicPlaceIsEligible } from '@/lib/server/public';
 import type { Place } from '@/lib/types';
 import Image from 'next/image';
+import { verificationMethodLabel } from '@/lib/presentation';
+import { Notice } from '@/components/ui/Notice';
 
 export const dynamic = 'force-dynamic';
 export function generateStaticParams() {
@@ -56,16 +58,16 @@ export default async function PlacePage({
   return (
     <>
       <SiteHeader />
-      <main className="detail-shell">
+      <main className="detail-shell public-shell public-page">
         {fallback && (
-          <p className="data-notice" role="status">
-            当前显示本地演示数据。
-          </p>
+            <Notice tone="info" className="data-notice">
+              当前显示本地演示数据。
+            </Notice>
         )}
         <Link href="/" className="back-link">
           ← 回到地图
         </Link>
-        <div className="detail-hero">
+        <div className="detail-hero public-page-heading">
           <div>
             <p className="kicker">
               {place.category} / {zoneName}
@@ -112,7 +114,7 @@ export default async function PlacePage({
                     <TrustBadge label={meal.freshness} compact />
                     <small>
                       核验于 {meal.observedAt.replaceAll('-', '.')} ·{' '}
-                      {meal.method}
+                      {verificationMethodLabel(meal.method)}
                     </small>
                   </div>
                 </div>
@@ -131,13 +133,16 @@ export default async function PlacePage({
                 <div className="submission-media-grid">
                   {place.evidence.map((item) => (
                     <figure key={item.id}>
-                      <Image
-                        src={item.url}
-                        width={item.width ?? 640}
-                        height={item.height ?? 480}
-                        unoptimized
-                        alt="已核验菜单或价签"
-                      />
+                      <a className="public-evidence-link" href={item.url} target="_blank" rel="noreferrer">
+                        <Image
+                          src={item.url}
+                          width={item.width ?? 640}
+                          height={item.height ?? 480}
+                          unoptimized
+                          alt="已核验菜单或价签，打开查看大图"
+                        />
+                        <span>打开大图 ↗</span>
+                      </a>
                     </figure>
                   ))}
                 </div>

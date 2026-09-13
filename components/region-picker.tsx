@@ -45,6 +45,7 @@ export function RegionPicker({
   );
   const searchRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -55,6 +56,23 @@ export function RegionPicker({
       if (event.key === 'Escape') {
         setOpen(false);
         triggerRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]',
+        ) ?? [],
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener('keydown', closeOnEscape);
@@ -131,6 +149,7 @@ export function RegionPicker({
       {open && (
         <div className="region-picker-backdrop" onMouseDown={closePicker}>
           <section
+            ref={dialogRef}
             className="region-picker"
             role="dialog"
             aria-modal="true"

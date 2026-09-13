@@ -15,14 +15,14 @@ import {
   SHENZHEN_REGION_CATALOG,
   type ShenzhenRegion,
   type ShenzhenRegionCatalog,
-} from '@/lib/regions';
-import type { MapViewport, Place } from '@/lib/types';
+} from '@/lib/regions';import type { MapViewport, Place } from '@/lib/types';
+import { Notice } from './ui/Notice';
 
 const DEFAULT_REGION = 'shenzhen';
 const NEARBY_RADIUS_METERS = 5_000;
 
-function nearbyViewport(origin?: { lng: number; lat: number }): MapViewport {
-  if (!origin) return SHENZHEN_CITY;
+function nearbyViewport(origin?: { lng: number; lat: number }, fallback: MapViewport = SHENZHEN_CITY): MapViewport {
+  if (!origin) return fallback;
   return {
     id: 'nearby',
     label: '我的附近',
@@ -255,7 +255,7 @@ export function HomeClient() {
       </section>
 
       <div className={`${styles.homeLayout} home-layout`}>
-        <section className={`${styles.resultsPanel} results-panel ${styles[`sheet-${mobileListState}`]} ${!loading && selected ? styles.hasSelection : ''}`} aria-live="polite">
+        <section className={`${styles.resultsPanel} results-panel ${styles[`sheet-${mobileListState}`]} ${!loading && selected ? styles.hasSelection : ''}`} aria-live="polite" aria-busy={loading}>
           {!isPlannedRegion && <RecentStrip />}
           <div className={styles.resultsHeading}>
             <div>
@@ -276,7 +276,7 @@ export function HomeClient() {
             <span>准入 · {selected.access}</span>
             <b>查看详情 ↗</b>
           </Link>}
-          {error && <div className={styles.dataNotice} role="status"><span>{error}</span><button type="button" onClick={retry}>重试</button></div>}
+          {error && <Notice tone="error" className={styles.dataNotice}><span>{error}</span><button type="button" onClick={retry}>重试</button></Notice>}
           {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><p>{viewport.label}已开放浏览，第一条信息等待附近的人共同补上。</p><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><p>试试放宽价格、换一个类别，或选择其他区域。</p><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
           <p className={styles.listNote}>价格来自现场菜单、公开菜单或近期用户核验。<Link href="/about">了解核验规则 ↗</Link></p>
         </section>

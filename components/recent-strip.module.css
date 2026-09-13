@@ -7,8 +7,8 @@
 }
 .recentStripTitle {
   margin: 0 0 6px;
-  color: #8b8d8f;
-  font-size: 10px;
+  color: #64686d;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .08em;
 }
@@ -40,8 +40,8 @@
   white-space: nowrap;
 }
 .recentStripItem span {
-  color: #737579;
-  font-size: 11px;
+  color: #64686d;
+  font-size: 12px;
   white-space: nowrap;
 }
 .recentStripItem span:first-of-type {
@@ -49,7 +49,7 @@
   font-weight: 800;
 }
 .recentStripAge {
-  color: #9a9b9d !important;
+  color: #64686d !important;
   font-weight: 400 !important;
 }
 

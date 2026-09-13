@@ -63,7 +63,7 @@ export function CoordinatePicker({
       }
     }).catch(() => {
       if (!cancelled) {
-        setMapError('腾讯底图暂时不可用，已切换为无需密钥的演示地图。');
+        setMapError('腾讯底图暂时不可用，已切换为无需密钥的示意底图。');
         setMode('demo');
       }
       adapter.destroy();
@@ -133,7 +133,7 @@ export function CoordinatePicker({
         ref={mapRef}
         className={`coordinate-map ${mode === 'tencent' ? 'coordinate-map-tencent' : 'coordinate-map-demo'}`}
         role="application"
-        aria-label={mode === 'tencent' ? '腾讯地图，点击确认店铺位置' : '演示地图，点击确认店铺位置'}
+        aria-label={mode === 'tencent' ? '腾讯地图，点击确认店铺位置' : '示意地图，点击确认店铺位置'}
         onClick={(event) => setFromMapPoint(event.clientX, event.clientY)}
       >
         {mode === 'demo' && <>
@@ -159,7 +159,7 @@ export function CoordinatePicker({
           }}
           onPointerCancel={() => setDragging(false)}
         ><span>⌖</span></button>}
-        <span className="coordinate-map-mode">{mode === 'tencent' ? 'TENCENT / 实时底图' : 'DEMO MAP / 无需密钥'}</span>
+        <span className="coordinate-map-mode">{mode === 'tencent' ? 'TENCENT / 实时底图' : '示意底图 / 无需密钥'}</span>
       </div>
       <div className="coordinate-fields">
         <label>经度

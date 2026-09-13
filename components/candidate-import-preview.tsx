@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { CandidateDraftDto, CandidatePreviewResult } from '@/lib/candidate-pool';
+import { Notice } from '@/components/ui/Notice';
 
 const FIELD_LABELS: Record<string, string> = {
   zone_name: '片区名称',
@@ -105,8 +106,8 @@ export function CandidateImportPreview({ draftId }: { draftId: string }) {
 
   return <section className="candidate-import-panel" aria-label="候选导入预览">
     <div className="candidate-import-heading"><div><p className="kicker">CANDIDATE DRAFT / PREVIEW</p><h2>候选导入预览</h2><p>这是即将写入后台的固定 16 列数据。确认版本后再提交，来源线索不会被当作核验方式。</p></div><div className="candidate-import-version">{preview?.version ? `预览版本 ${preview.version}` : '已提交'}</div></div>
-    {message && <p className="candidate-message" role="status">{message}</p>}
-    {error && <p className="candidate-global-error" role="alert">{error}</p>}
+    {message && <Notice tone="success" className="candidate-message">{message}</Notice>}
+    {error && <Notice tone="error" className="candidate-global-error">{error}</Notice>}
     {preview && <>
       <div className={`candidate-preview-summary ${preview.valid ? 'is-valid' : 'is-invalid'}`} role="status"><strong>{preview.valid ? '检查通过' : '需要修改'}</strong><span>{preview.selectedCount} 份餐食 · {preview.placeCount ?? preview.groupCount} 家计划地点 · {preview.valid ? '可以提交' : `${preview.errors.length} 个字段错误`}</span></div>
       <div className="candidate-preview-rows">

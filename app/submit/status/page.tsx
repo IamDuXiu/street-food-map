@@ -2,6 +2,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
+import { submissionStatusLabel, submissionTypeLabel } from '@/lib/presentation';
+import { Notice } from '@/components/ui/Notice';
 
 export default function SubmissionStatusPage() {
   const [code, setCode] = useState('');
@@ -39,22 +41,16 @@ export default function SubmissionStatusPage() {
   return (
     <>
       <SiteHeader />
-      <main className="form-shell">
+      <main className="form-shell public-shell public-page">
         <Link href="/" className="back-link">
           ← 回到地图
         </Link>
         <div className="form-heading">
           <p className="kicker">投稿状态查询</p>
-          <h1>
-            看看这条情报，
-            <br />
-            <em>走到哪一步了。</em>
-          </h1>
-          <p>
-            只需要投稿成功时保存的查询码。我们不会通过查询码展示你的投稿内容。
-          </p>
+          <h1>查询投稿状态。</h1>
+          <p>输入投稿成功时保存的查询码，我们只展示处理进度。</p>
         </div>
-        <form className="submission-form" onSubmit={search} aria-describedby="status-form-error">
+        <form className="submission-form" onSubmit={search} aria-describedby="status-form-error" aria-busy={busy}>
           <label>
             查询码
             <input
@@ -69,18 +65,18 @@ export default function SubmissionStatusPage() {
             {busy ? '查询中…' : '查询状态'}
           </button>
         </form>
-        <p id="status-form-error" className="form-notice" role="alert" aria-live="assertive" hidden={!error}>
-          {error || ' '}
-        </p>
+        <div id="status-form-error" hidden={!error}>
+          {error && <Notice tone="error" className="form-notice">{error}</Notice>}
+        </div>
         {data && (
-          <section className="review-detail status-result" aria-live="polite">
+          <section className="status-result public-status-card" aria-live="polite">
             <p className="kicker">编号尾号 · {data.idSuffix}</p>
             <h2>{data.message}</h2>
             <dl>
               <dt>类型</dt>
-              <dd>{data.type}</dd>
+              <dd>{submissionTypeLabel(data.type)}</dd>
               <dt>状态</dt>
-              <dd>{data.status}</dd>
+              <dd>{submissionStatusLabel(data.status)}</dd>
             </dl>
           </section>
         )}
