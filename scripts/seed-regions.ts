@@ -2,6 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDatabase, type SqliteDatabase } from '../lib/server/db';
 import { SHENZHEN_CITY, SHENZHEN_DISTRICTS, type ShenzhenRegion } from '../lib/regions';
+import { PEARL_RIVER_DISTRICTS } from '../lib/region-districts';
 
 export type RegionSeedLevel = 'city' | 'district' | 'business_area';
 
@@ -66,7 +67,20 @@ export function regionSeedRecords(): RegionSeedRecord[] {
       records.push(toRecord(area, district.id, areaIndex));
     });
   });
-  return records.concat(PRD_CITY_SEEDS);
+  const cityDistricts: RegionSeedRecord[] = PEARL_RIVER_DISTRICTS.map(
+    (district) => ({
+      id: district.id,
+      parentId: district.cityId,
+      name: district.name,
+      level: 'district' as const,
+      centerLng: district.centerLng,
+      centerLat: district.centerLat,
+      bbox: district.bbox,
+      zoom: district.zoom,
+      sortOrder: district.sortOrder,
+    }),
+  );
+  return records.concat(PRD_CITY_SEEDS, cityDistricts);
 }
 
 export function seedRegions(db: SqliteDatabase): number {

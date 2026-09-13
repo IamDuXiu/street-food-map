@@ -92,4 +92,30 @@ describe('区域目录回填', () => {
     expect(invalidBoxes).toEqual([]);
     db.close();
   });
+
+  it('珠三角 8 市行政区已回填（东莞/中山为直筒子市）', () => {
+    const db = tempDb();
+    seedRegions(db);
+    const counts = Object.fromEntries(
+      (
+        db
+          .prepare(
+            "SELECT parent_id id, count(*) c FROM regions WHERE level='district' GROUP BY parent_id",
+          )
+          .all() as Array<{ id: string; c: number }>
+      ).map((row) => [row.id, row.c]),
+    );
+    expect(counts).toMatchObject({
+      shenzhen: SHENZHEN_DISTRICTS.length,
+      guangzhou: 11,
+      foshan: 5,
+      zhuhai: 3,
+      huizhou: 5,
+      jiangmen: 7,
+      zhaoqing: 8,
+    });
+    expect(counts.dongguan).toBeUndefined();
+    expect(counts.zhongshan).toBeUndefined();
+    db.close();
+  });
 });

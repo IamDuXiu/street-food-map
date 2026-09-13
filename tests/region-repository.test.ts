@@ -82,13 +82,16 @@ describe('区域目录 DB 仓储', () => {
     db.close();
   });
 
-  it('尚未整理下级目录的城市返回空行政区', () => {
+  it('广州返回 11 个行政区，直筒子市（东莞/中山）无下级', () => {
     const db = tempDb();
     seedRegions(db);
     const catalog = buildRegionCatalog(db, 'guangzhou')!;
     expect(catalog.city.label).toBe('广州市');
-    expect(catalog.districts).toEqual([]);
+    expect(catalog.districts).toHaveLength(11);
+    expect(catalog.districts.map((d) => d.label)).toContain('天河区');
     expect(catalog.cities).toHaveLength(9);
+    const dongguan = buildRegionCatalog(db, 'dongguan')!;
+    expect(dongguan.districts).toEqual([]);
     db.close();
   });
 

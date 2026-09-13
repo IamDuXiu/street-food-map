@@ -207,3 +207,11 @@
 - **未**写正式库（`data/budget-map.sqlite`，只读核对为 5 个 demo 点、regions 空）：入库待用户确认，可粘贴 `creator-import-ready.json` 到 `/admin/creator-import` 或经脚本导入。
 - 残留噪声（已在复核文档标注、无功能影响）：采集结果里仍有「厂/中介/挑战吃一天/外地店」等非探店或非珠三角条目落入「需看片补录」清单，需人工剔除。
 - **已导入正式库（2026-09-13）**：先 `npm run backup`（`backups/budget-map-backup-20260913063923.zip`）+ `npm run seed:regions`（regions 0→83），再用 `commitCreatorImport` 写入 4 条（`places` 5→9；`pilot_zones` 新增 `creator-foshan/shenzhen/guangzhou`）。实时校验：`GET /api/v1/map` 返回 9 点，4 条均为「低可信」带来源标签；`GET /api/v1/places/:id` 返回 `unverified=true` 与正确来源；`bbox` 按城市命中（佛山→牛腩粉、深圳→现炒快餐/才记、广州→宏兴）。已知：广州 bbox 会纳入佛山点（相邻城市 bbox 重叠，待根治）。导入脚本为临时文件，已删除。
+
+### 珠三角 8 市行政区回填（2026-09-13）
+
+- 新增 `lib/region-districts.ts`：由腾讯地图 WebService `district/v1/getchildren`（`get_polygon=1`，GCJ-02，`data_version` 2026-04-28）一次性生成并**固化**的 8 市行政区种子，共 **39** 个（广州 11 / 佛山 5 / 珠海 3 / 惠州 5 / 江门 7 / 肇庆 8），含官方中心点与官方简化边界 bbox；东莞、中山为不设区的地级市（直筒子市），仅保留市级。运行时不依赖腾讯接口。
+- `scripts/seed-regions.ts`：`regionSeedRecords()` 在 9 市 + 深圳完整目录之后追加上述行政区，仍为幂等 upsert；未改 schema、未改运行时读取逻辑。
+- 测试：`tests/seed-regions.test.ts` 新增 8 市行政区数量断言；`tests/region-repository.test.ts` 原「广州无下级」改为「广州 11 区 + 东莞无下级」。全量 `npm test` **25 文件 150 测试**通过；`lint` / `typecheck` / `build`（exit 0）全通过。
+- 真实库：`npm run backup`（`backups/budget-map-backup-20260913070304.zip`）后 `npm run seed:regions` → regions 83 → **122**（9 城 + 49 区 + 64 商圈）。实时 `GET /api/v1/config?city=` 校验：广州 11 / 佛山 5 / 珠海 3 / 惠州 5 / 江门 7 / 肇庆 8 / 东莞 0 / 深圳 10。
+- 尚未做：8 市的**商圈**仍为空（按 `PLAN-REGIONS.md` §4「逐市按数据补齐」后续追加）；行政区 bbox 为官方简化边界取范围，未做精确化。
