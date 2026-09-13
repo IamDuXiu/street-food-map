@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Notice, type NoticeTone } from '@/components/ui/Notice';
+import { Select } from '@/components/ui/Select';
 
 type ActionNotice = { tone: NoticeTone; message: string };
 const leadStatusLabels: Record<string, string> = { new: '待处理', verifying: '待核验', converted: '已导入', rejected: '已跳过', duplicate: '重复' };
@@ -204,14 +205,16 @@ export function SubmissionActions({
       </p>
       <label>
         独立核验方式
-        <select
+        <Select
           value={method}
-          onChange={(event) => setMethod(event.target.value)}
-        >
-          <option value="onsite_menu">现场菜单或价签</option>
-          <option value="receipt">当次消费小票</option>
-          <option value="official_menu">官方菜单</option>
-        </select>
+          onChange={setMethod}
+          ariaLabel="独立核验方式"
+          options={[
+            { value: 'onsite_menu', label: '现场菜单或价签' },
+            { value: 'receipt', label: '当次消费小票' },
+            { value: 'official_menu', label: '官方菜单' },
+          ]}
+        />
       </label>
       <label>
         核验日期

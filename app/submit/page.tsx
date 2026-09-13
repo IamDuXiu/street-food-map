@@ -6,6 +6,7 @@ import { SiteHeader } from '@/components/site-header';
 import type { Place } from '@/lib/types';
 import { submissionSchema } from '@/lib/server/validation';
 import { Notice } from '@/components/ui/Notice';
+import { Select } from '@/components/ui/Select';
 import { submissionTypeLabels } from '@/lib/presentation';
 
 type SubmissionType = 'new_place' | 'new_price' | 'correction' | 'closure';
@@ -25,6 +26,11 @@ export default function SubmitPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [placesLoading, setPlacesLoading] = useState(true);
   const [selectedPlaceId, setSelectedPlaceId] = useState('');
+  const [zoneId, setZoneId] = useState('sz university');
+  const [menuItemId, setMenuItemId] = useState('');
+  const [correctionField, setCorrectionField] = useState('address');
+  const [closureType, setClosureType] = useState('temporarily_closed');
+  const [method, setMethod] = useState('onsite_menu');
   const [submitted, setSubmitted] = useState<{
     code: string;
     id: string;
@@ -332,10 +338,16 @@ export default function SubmitPage() {
               </div>
               <label>
                 所属样板区
-                <select name="zoneId" defaultValue="sz university">
-                  <option value="sz university">深大粤海</option>
-                  <option value="science park">高新园 / 科兴</option>
-                </select>
+                <Select
+                  name="zoneId"
+                  value={zoneId}
+                  onChange={setZoneId}
+                  ariaLabel="所属样板区"
+                  options={[
+                    { value: 'sz university', label: '深大粤海' },
+                    { value: 'science park', label: '高新园 / 科兴' },
+                  ]}
+                />
               </label>
             </fieldset>
           )}
@@ -344,21 +356,15 @@ export default function SubmitPage() {
               <legend>02 · 选择地点</legend>
               <label>
                 地点
-                <select
-                  required
+                <Select
                   name="placeId"
-                  aria-describedby="place-help"
-                  disabled={placesLoading}
                   value={selectedPlaceId}
-                  onChange={(event) => setSelectedPlaceId(event.target.value)}
-                >
-                  <option value="">{placesLoading ? '正在读取地点…' : '请选择已公开地点'}</option>
-                  {places.map((place) => (
-                    <option key={place.id} value={place.id}>
-                      {place.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedPlaceId}
+                  disabled={placesLoading}
+                  ariaLabel="地点"
+                  placeholder={placesLoading ? '正在读取地点…' : '请选择已公开地点'}
+                  options={places.map((place) => ({ value: place.id, label: place.name }))}
+                />
                 <span id="place-help" className="field-help">
                   {placesLoading ? '正在读取可公开地点。' : places.length ? '只列出目前可公开的地点。' : '暂无可选地点；你可以改选“发现新饭点”。'}
                 </span>
@@ -366,14 +372,16 @@ export default function SubmitPage() {
               {selectedPlace && type === 'new_price' && (
                 <label>
                   餐食
-                  <select name="menuItemId">
-                    <option value="">新增一份餐食</option>
-                    {selectedPlace.meals.map((meal) => (
-                      <option key={meal.id} value={meal.id}>
-                        {meal.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    name="menuItemId"
+                    value={menuItemId}
+                    onChange={setMenuItemId}
+                    ariaLabel="餐食"
+                    options={[
+                      { value: '', label: '新增一份餐食' },
+                      ...selectedPlace.meals.map((meal) => ({ value: meal.id, label: meal.name })),
+                    ]}
+                  />
                 </label>
               )}
               {type === 'new_price' && (
@@ -390,28 +398,34 @@ export default function SubmitPage() {
               <>
                 <label>
                   要修改的字段
-                  <select name="field" defaultValue="address">
-                    <option value="place_name">地点名称</option>
-                    <option value="address">地址</option>
-                    <option value="access_type">准入方式</option>
-                    <option value="access_note">准入说明</option>
-                    <option value="opening_hours_note">营业时间</option>
-                    <option value="menu_item_name">餐食名称</option>
-                  </select>
+                  <Select
+                    name="field"
+                    value={correctionField}
+                    onChange={setCorrectionField}
+                    ariaLabel="要修改的字段"
+                    options={[
+                      { value: 'place_name', label: '地点名称' },
+                      { value: 'address', label: '地址' },
+                      { value: 'access_type', label: '准入方式' },
+                      { value: 'access_note', label: '准入说明' },
+                      { value: 'opening_hours_note', label: '营业时间' },
+                      { value: 'menu_item_name', label: '餐食名称' },
+                    ]}
+                  />
                 </label>
                 {selectedPlace && (
                   <label>
                     要修改的餐食
-                    <select name="menuItemId" defaultValue="">
-                      <option value="">
-                        请选择餐食（仅修改餐食名称时需要）
-                      </option>
-                      {selectedPlace.meals.map((meal) => (
-                        <option key={meal.id} value={meal.id}>
-                          {meal.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Select
+                      name="menuItemId"
+                      value={menuItemId}
+                      onChange={setMenuItemId}
+                      ariaLabel="要修改的餐食"
+                      options={[
+                        { value: '', label: '请选择餐食（仅修改餐食名称时需要）' },
+                        ...selectedPlace.meals.map((meal) => ({ value: meal.id, label: meal.name })),
+                      ]}
+                    />
                   </label>
                 )}
                 <label>
@@ -427,10 +441,16 @@ export default function SubmitPage() {
             {type === 'closure' && (
               <label>
                 状态
-                <select name="closureType" defaultValue="temporarily_closed">
-                  <option value="temporarily_closed">暂时歇业</option>
-                  <option value="closed">确认停业</option>
-                </select>
+                <Select
+                  name="closureType"
+                  value={closureType}
+                  onChange={setClosureType}
+                  ariaLabel="状态"
+                  options={[
+                    { value: 'temporarily_closed', label: '暂时歇业' },
+                    { value: 'closed', label: '确认停业' },
+                  ]}
+                />
               </label>
             )}
             {type === 'new_place' && (
@@ -470,13 +490,13 @@ export default function SubmitPage() {
                 </div>
                 <label>
                   核验方式
-                  <select name="method" defaultValue="onsite_menu">
-                    {methods.map((method) => (
-                      <option key={method.value} value={method.value}>
-                        {method.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    name="method"
+                    value={method}
+                    onChange={setMethod}
+                    ariaLabel="核验方式"
+                    options={methods}
+                  />
                 </label>
               </>
             )}

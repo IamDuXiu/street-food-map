@@ -7,6 +7,7 @@ import { PlaceCard } from './place-card';
 import { RecentStrip } from './recent-strip';
 import { RegionPicker } from './region-picker';
 import styles from './home-client.module.css';
+import { Select } from '@/components/ui/Select';
 import { formatPrice, lowestMeal, prepareNearbyPlaces, withRegionDistance } from '@/lib/filter';
 import { wgs84ToGcj02 } from '@/lib/geo';
 import {
@@ -254,8 +255,8 @@ export function HomeClient() {
           <div className={styles.budgetChips} role="group" aria-label="最高价格">
             {[15, 20, 25].map((price) => <button key={price} type="button" className={maxPrice === price ? styles.budgetChipActive : styles.budgetChip} aria-pressed={maxPrice === price} onClick={() => setMaxPrice(price)}>≤ ¥{price}</button>)}
           </div>
-          <label className={styles.filterControl}>条件<select value={tag} onChange={(event) => setTag(event.target.value)} aria-label="按条件或标签筛选"><option value="all">全部</option>{availableTags.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-          <label className={styles.filterControl}>排序<select value={sort} onChange={(event) => setSort(event.target.value as SortMode)} aria-label="结果排序"><option value="price">最低价优先</option><option value="freshness">最近核验</option><option value="distance" disabled={!origin}>附近优先{origin ? '' : '（先定位）'}</option></select></label>
+          <label className={styles.filterControl}>条件<Select variant="bare" value={tag} onChange={setTag} ariaLabel="按条件或标签筛选" options={[{ value: 'all', label: '全部' }, ...availableTags.map((item) => ({ value: item, label: item }))]} /></label>
+          <label className={styles.filterControl}>排序<Select variant="bare" value={sort} onChange={(next) => setSort(next as SortMode)} ariaLabel="结果排序" options={[{ value: 'price', label: '最低价优先' }, { value: 'freshness', label: '最近核验' }, { value: 'distance', label: origin ? '附近优先' : '附近优先（先定位）', disabled: !origin }]} /></label>
           <button type="button" className={regionId === 'nearby' ? styles.locateButtonActive : styles.locateButton} aria-pressed={regionId === 'nearby'} onClick={locateNearby}>◎ 我的附近</button>
           <span className={styles.filterHint}>有效餐食 ≤ {formatPrice(maxPrice * 100)}</span>
         </div>

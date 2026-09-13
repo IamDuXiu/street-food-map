@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Notice, type NoticeTone } from '@/components/ui/Notice';
+import { Select } from '@/components/ui/Select';
 
 interface Region {
   id: string;
@@ -234,27 +235,22 @@ export function RegionManager() {
       <div className="region-manager-picker">
         <label>
           城市
-          <select value={cityId} onChange={(event) => pickCity(event.target.value)}>
-            {cities.map((city) => (
-              <option key={city.id} value={city.id}>
-                {city.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={cityId}
+            onChange={pickCity}
+            ariaLabel="城市"
+            options={cities.map((city) => ({ value: city.id, label: city.name }))}
+          />
         </label>
         <label>
           行政区
-          <select
+          <Select
             value={districtId}
-            onChange={(event) => pickDistrict(event.target.value)}
-          >
-            <option value="">请选择行政区</option>
-            {districts.map((district) => (
-              <option key={district.id} value={district.id}>
-                {district.name}
-              </option>
-            ))}
-          </select>
+            onChange={pickDistrict}
+            ariaLabel="行政区"
+            placeholder="请选择行政区"
+            options={districts.map((district) => ({ value: district.id, label: district.name }))}
+          />
         </label>
       </div>
 

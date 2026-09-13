@@ -160,8 +160,12 @@ export function RegionPicker({
           >
             <header className="region-picker-header">
               <div>
-                <p className="kicker">{catalog.city.label} / 区域目录</p>
+                <p className="kicker">区域目录</p>
                 <h2 id="region-picker-title">选一个吃饭范围</h2>
+                <div className="region-city-context" role="group" aria-label="当前城市">
+                  <span className="region-city-context-label">当前城市</span>
+                  <strong>{catalog.city.label}</strong>
+                </div>
               </div>
               <button
                 type="button"
@@ -194,12 +198,6 @@ export function RegionPicker({
                 </div>
               </div>
             )}
-
-            <div className="region-city-context" role="group" aria-label="当前城市">
-              <span className="region-city-context-label">当前城市</span>
-              <strong>{catalog.city.label}</strong>
-              <span className="region-city-context-note">区域目录</span>
-            </div>
 
             <label className="region-search">
               <span aria-hidden="true">⌕</span>

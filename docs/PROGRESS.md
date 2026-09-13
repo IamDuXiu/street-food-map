@@ -1,5 +1,20 @@
 # 阶段 5 准备进度
 
+## 表单与下拉控件统一（2026-09-13）
+
+- [x] 修复投稿表单下拉“标签与控件同行”：`.submission-form` 的块级控件规则原先只覆盖 `input`/`textarea`，漏掉 `select`；补入后 `地点/餐食/核验方式/状态/所属样板区/要修改的字段` 统一为“上标题、下控件”，帮助文案独占一行。
+- [x] 新增 `components/ui/Select`（combobox + listbox）：三角符右边距固定 10px；展开列表宽度锁定为字段宽度、不超出；支持方向键/Home/End/Enter/Esc、点击外部关闭、`aria-invalid/aria-describedby`；值写入同名隐藏 `input`，`FormData` 与提交链路不变；提供 `field/compact/bare` 变体。
+- [x] 迁移全部原生 `<select>`：投稿表单 7、候选池 6（4 表单字段 + 风险筛选 + 恢复最近草稿）、区域管理 2、审核动作 1、首页筛选 2（条件/排序用 `bare` 保留原筛选胶囊）。
+- [x] 区域目录弹窗改版：浅色 surface、12px 圆角、柔和投影；“当前城市”并入头部并删除重复横幅；城市改胶囊 chip；左栏目录圆角选中态 + 品牌侧条；覆盖状态改软标签。
+- [x] 交互一致性修复：候选池字段控件直角改 8px 圆角、硬偏移焦点阴影改品牌柔光环；`.choice-grid` 单选卡改品牌焦点 + 圆角。
+- [x] e2e 同步：`core-flow`/`candidate-pool` 中受影响的 `selectOption`/`toHaveValue` 改用自定义控件（`getByRole('combobox')` + `[role=option][data-value]`）。
+
+验证（2026-09-13）：
+- `npm run lint` / `typecheck` / `npm test`（25 文件 / 150 测试）/ `npm run build`（exit 0）全通过。
+- 定向 e2e 通过：用户端筛选状态恢复、定位后排序、候选池完整提交链路。
+- 计算样式：表单下拉列表宽 680px = 字段宽；首页筛选列表 88px = 字段宽；箭头距字段内边 10px。
+- 既有 e2e 失败（非本次引入，待修）：3 处区域导航名 `深圳行政区` vs 实际 `深圳市行政区`；1 处投稿类型文案 `价格变化` vs `价格有变化`。
+
 ## 统一 UI 基础（2026-09-12）
 
 - [x] 建立白/浅灰/黑色 foundation tokens、1px 边框、8–12px 圆角、克制珊瑚品牌色、可见焦点和 40–44px 控件基线。

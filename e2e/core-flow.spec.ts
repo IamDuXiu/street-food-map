@@ -70,12 +70,14 @@ test('用户端筛选状态在详情返回后可恢复', async ({ page }) => {
   const search = page.getByRole('textbox', { name: '搜店名或餐食' });
 
   await budget25.click();
-  await tag.selectOption('有肉有菜');
-  await sort.selectOption('freshness');
+  await tag.click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="有肉有菜"]').click();
+  await sort.click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="freshness"]').click();
   await search.fill('科兴');
   const card = page.locator('.results-panel a.card-link').filter({ hasText: '科兴科学园 · B1 员工餐厅' });
   await expect(card).toBeVisible();
-  await expect(sort).toHaveValue('freshness');
+  await expect(sort).toHaveAttribute('data-value', 'freshness');
 
   await card.click();
   await expect(page.getByRole('heading', { name: '科兴科学园 · B1 员工餐厅' })).toBeVisible();
@@ -84,8 +86,8 @@ test('用户端筛选状态在详情返回后可恢复', async ({ page }) => {
 
   await expect(search).toHaveValue('科兴');
   await expect(budget25).toHaveAttribute('aria-pressed', 'true');
-  await expect(tag).toHaveValue('有肉有菜');
-  await expect(sort).toHaveValue('freshness');
+  await expect(tag).toHaveAttribute('data-value', '有肉有菜');
+  await expect(sort).toHaveAttribute('data-value', 'freshness');
   await expect(card).toBeVisible();
 });
 
@@ -138,9 +140,10 @@ test('定位成功后仍可按价格或最近核验排序', async ({ page }) => 
     if (!response.url().includes('/api/v1/map')) return false;
     return new URL(response.url()).searchParams.get('sort') === 'price';
   });
-  await sort.selectOption('price');
+  await sort.click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="price"]').click();
   await priceResponse;
-  await expect(sort).toHaveValue('price');
+  await expect(sort).toHaveAttribute('data-value', 'price');
   const prices = await page.locator('.place-card .place-card-price').allTextContents();
   const numericPrices = prices.map((value) => Number(value.replace('¥', '')));
   expect(numericPrices.length).toBeGreaterThan(1);
@@ -150,9 +153,10 @@ test('定位成功后仍可按价格或最近核验排序', async ({ page }) => 
     if (!response.url().includes('/api/v1/map')) return false;
     return new URL(response.url()).searchParams.get('sort') === 'freshness';
   });
-  await sort.selectOption('freshness');
+  await sort.click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="freshness"]').click();
   await freshnessResponse;
-  await expect(sort).toHaveValue('freshness');
+  await expect(sort).toHaveAttribute('data-value', 'freshness');
   expect((await page.locator('.place-card').all()).length).toBeGreaterThan(1);
 });
 
@@ -190,8 +194,10 @@ test('匿名投稿可以完成真实提交并到达成功页', async ({ page }) 
 test('匿名价格投稿可查询，管理员独立核验后公开新价格', async ({ page }) => {
   await page.goto('/submit');
   await page.getByLabel('价格有变化').check();
-  await page.locator('select[name="placeId"]').selectOption('kexing-b1-foodcourt');
-  await page.locator('select[name="menuItemId"]').selectOption('kexing-rice');
+  await page.getByRole('combobox', { name: '地点' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="kexing-b1-foodcourt"]').click();
+  await page.getByRole('combobox', { name: '餐食' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="kexing-rice"]').click();
   await page.getByLabel('价格（元）').fill('22.5');
   await page.getByLabel('我确认这张图片').check();
   await page.getByRole('button', { name: /提交这条饭签/ }).click();
@@ -210,7 +216,8 @@ test('匿名价格投稿可查询，管理员独立核验后公开新价格', as
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto('/admin/submissions');
   await expect(page.getByText(/价格变化|new_price/).first()).toBeVisible();
-  await page.getByLabel('独立核验方式').selectOption('onsite_menu');
+  await page.getByRole('combobox', { name: '独立核验方式' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="onsite_menu"]').click();
   await page.getByLabel('我已独立核验').check();
   const approvalResponse = page.waitForResponse(
     (response) =>

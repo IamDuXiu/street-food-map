@@ -1,5 +1,9 @@
 # 阶段 0 实施决策
 
+## 2026-09-13 · 下拉控件统一为自定义 Select
+
+原生 `<select>` 的展开列表宽度由浏览器渲染决定（至少为字段宽度，并按最长选项继续撑宽），CSS 无法限制；三角指示器也无法精确控制距右边框的留白。为满足「箭头右边距 10px、列表宽度不超过字段宽度、跨浏览器一致」，新增自定义 `components/ui/Select`（combobox + listbox；值写入同名隐藏 `input` 以兼容 `FormData` 与既有提交链路），并提供 `field` / `compact` / `bare` 三种变体。全部页面原生 `<select>` 已迁移：投搞表单、后台候选池、区域管理、审核动作、首页筛选条。此决策覆盖此前对各处原生 `<select>` 的样式定制。
+
 ## 2026-09-09 · 产品方向问答决策（14 项，产品负责人确认）
 
 经 14 项问答确认以下产品与技术方向（详见工作区 IMPLEMENTATION.md / QUESTIONS.md 及新整理的 PRD.md / DESIGN.md / ACCEPTANCE.md）：

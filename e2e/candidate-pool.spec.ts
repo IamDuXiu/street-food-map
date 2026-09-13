@@ -60,11 +60,14 @@ test('候选池支持按店勾选、必填拦截、demo 落点并生成带版本
   await expect(page.getByRole('alert').filter({ hasText: '还有必填信息未完成' })).toBeVisible();
 
   await page.getByLabel('完整地址').fill(`深圳市南山区学府路 100 号现场门店 ${suffix}`);
-  await page.getByLabel('启用片区').selectOption({ label: '深大粤海' });
-  await page.getByLabel('准入类型').selectOption('public');
+  await page.getByRole('combobox', { name: '启用片区' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="深大粤海"]').click();
+  await page.getByRole('combobox', { name: '准入类型' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="public"]').click();
   await page.getByLabel('餐食类别：现场粉面').fill('粉面');
   await page.getByLabel('核验日期').fill('2026-09-05');
-  await page.getByLabel('核验方式').selectOption('onsite_menu');
+  await page.getByRole('combobox', { name: '核验方式' }).click();
+  await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="onsite_menu"]').click();
   await page.getByLabel('示意地图，点击确认店铺位置').click({ position: { x: 120, y: 120 } });
   await expect(page.getByText(/坐标系固定为 GCJ-02/)).toBeVisible();
   await page.getByLabel('仍在营业且门头一致').check();
@@ -82,7 +85,7 @@ test('候选池支持按店勾选、必填拦截、demo 落点并生成带版本
   await expect(page.getByRole('status').filter({ hasText: /已提交 1 份餐食，新增 1 家地点/ })).toBeVisible();
   await page.goto('/admin/leads');
   await page.waitForSelector('.candidate-workspace');
-  await expect(page.locator(`select[aria-label="恢复最近草稿"] option[value="${draftParam}"]`)).toHaveCount(0);
+  await expect(page.locator(`[role="option"][data-value="${draftParam}"]`)).toHaveCount(0);
 });
 
 test('候选池草稿刷新可恢复且手机无横向溢出', async ({ page }) => {
