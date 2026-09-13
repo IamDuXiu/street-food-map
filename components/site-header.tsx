@@ -19,7 +19,6 @@ export function AdminHeader() {
   return (
     <header className="admin-header">
       <Link className="wordmark" href="/admin" aria-label="饭签后台总览"><span className="wordmark-mark">饭</span><span>饭签后台</span></Link>
-      <span className="demo-pill"><span className="status-dot" />本地工作台</span>
     </header>
   );
 }

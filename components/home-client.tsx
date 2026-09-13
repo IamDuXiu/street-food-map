@@ -186,7 +186,7 @@ export function HomeClient() {
     if (sort === 'distance') setSort('price');
     setSelectedId(null);
     setMovedBbox(undefined);
-    setLocationMessage(region.coverage === 'planned' ? `${region.label}已开放浏览，真实饭签等待共建。` : `已切换到${region.label}。`);
+    setLocationMessage(`已切换到${region.label}。`);
   }
 
   function chooseCity(nextCityId: string, label: string) {
@@ -293,7 +293,7 @@ export function HomeClient() {
             <b>查看详情 ↗</b>
           </Link>}
           {error && <Notice tone="error" className={styles.dataNotice}><span>{error}</span><button type="button" onClick={retry}>重试</button></Notice>}
-          {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><p>{viewport.label}已开放浏览，第一条信息等待附近的人共同补上。</p><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><p>试试放宽价格、换一个类别，或选择其他区域。</p><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
+          {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
           <p className={styles.listNote}>价格来自现场菜单、公开菜单或近期用户核验。<Link href="/about">了解核验规则 ↗</Link></p>
         </section>
         <MapStage places={places} viewport={viewport} selectedId={selected?.id ?? selectedId} onSelect={(id) => { setSelectedId(id); setMobileListState('peek'); }} onSearchViewport={(nextBbox) => setMovedBbox(nextBbox)} userLocation={regionId === 'nearby' ? origin : undefined} />

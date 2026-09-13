@@ -52,7 +52,7 @@ def ensure_public_fixture(page: Page, route: str) -> None:
         expect(page.get_by_role("region", name="示意地图")).to_be_visible()
         expect(page.locator(".results-panel a.card-link").first).to_be_visible()
     elif route == "/about":
-        expect(page.get_by_role("heading", name="先看价格，再看核验日期。")).to_be_visible()
+        expect(page.get_by_role("heading", name="收录与核验规则")).to_be_visible()
     elif route.startswith("/places/"):
         expect(page.get_by_role("heading", name="科兴科学园 · B1 员工餐厅")).to_be_visible()
     elif route == "/submit":

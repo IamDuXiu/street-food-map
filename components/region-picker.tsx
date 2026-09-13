@@ -19,7 +19,7 @@ function CoverageBadge({ region }: { region: ShenzhenRegion }) {
     <span
       className={`region-status ${region.coverage === 'live' ? 'region-status-live' : ''}`}
     >
-      {region.coverage === 'live' ? '已有饭签' : '待共建'}
+      {region.coverage === 'live' ? '已有饭签' : '暂无饭签'}
     </span>
   );
 }
@@ -230,16 +230,12 @@ export function RegionPicker({
                 ) : (
                   <div className="region-no-result">
                     <strong>还没有这个区域</strong>
-                    <span>目前先覆盖{catalog.city.label}行政区和首批常用商圈。</span>
                   </div>
                 )}
               </div>
             ) : catalog.districts.length === 0 ? (
               <div className="region-no-result">
                 <strong>目录整理中</strong>
-                <span>
-                  {catalog.city.label}的行政区与商圈正在补充，会随数据逐步补齐。
-                </span>
               </div>
             ) : (
               <div className="region-browser">
@@ -312,10 +308,6 @@ export function RegionPicker({
                 </div>
               </div>
             )}
-
-            <footer className="region-picker-footer">
-              行政区用于导航；商圈是便于找饭的近似范围，会随数据逐步调整。
-            </footer>
           </section>
         </div>
       )}

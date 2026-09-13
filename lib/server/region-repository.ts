@@ -68,10 +68,10 @@ function bboxHasPoint(
 
 function subtitleFor(level: RegionLevel, coverage: CoverageStatus): string {
   if (level === 'city')
-    return coverage === 'live' ? '范围内已有饭签' : '已开放浏览 · 待共建';
+    return coverage === 'live' ? '范围内已有饭签' : '已开放浏览';
   if (level === 'district')
-    return coverage === 'live' ? '部分商圈已有饭签' : '已开放浏览 · 待共建';
-  return coverage === 'live' ? '已有饭签' : '已开放浏览 · 待共建';
+    return coverage === 'live' ? '部分商圈已有饭签' : '已开放浏览';
+  return coverage === 'live' ? '已有饭签' : '已开放浏览';
 }
 
 function toRegion(

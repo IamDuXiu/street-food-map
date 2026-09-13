@@ -40,13 +40,13 @@ export const placeSchema = z
       ctx.addIssue({
         code: 'custom',
         path: ['lng'],
-        message: '经度必须在深圳试点范围内',
+        message: '经度必须在深圳范围内',
       });
     if (value.lat < 22.4 || value.lat > 22.9)
       ctx.addIssue({
         code: 'custom',
         path: ['lat'],
-        message: '纬度必须在深圳试点范围内',
+        message: '纬度必须在深圳范围内',
       });
   });
 export const placePatchSchema = z

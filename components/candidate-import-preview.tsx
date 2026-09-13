@@ -105,7 +105,7 @@ export function CandidateImportPreview({ draftId }: { draftId: string }) {
   if (error && !preview) return <section className="candidate-import-panel candidate-import-error" aria-label="候选导入预览" role="alert"><p>{error}</p><Link className="secondary-button" href={`/admin/leads?draft=${encodeURIComponent(draftId)}`}>返回候选池修改</Link></section>;
 
   return <section className="candidate-import-panel" aria-label="候选导入预览">
-    <div className="candidate-import-heading"><div><p className="kicker">CANDIDATE DRAFT / PREVIEW</p><h2>候选导入预览</h2><p>这是即将写入后台的固定 16 列数据。确认版本后再提交，来源线索不会被当作核验方式。</p></div><div className="candidate-import-version">{preview?.version ? `预览版本 ${preview.version}` : '已提交'}</div></div>
+    <div className="candidate-import-heading"><div><p className="kicker">CANDIDATE DRAFT / PREVIEW</p><h2>候选导入预览</h2></div><div className="candidate-import-version">{preview?.version ? `预览版本 ${preview.version}` : '已提交'}</div></div>
     {message && <Notice tone="success" className="candidate-message">{message}</Notice>}
     {error && <Notice tone="error" className="candidate-global-error">{error}</Notice>}
     {preview && <>

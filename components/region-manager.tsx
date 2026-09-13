@@ -73,7 +73,7 @@ export function RegionManager() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string }>({
     tone: 'info',
-    message: '选择城市与行政区，然后新增或修改商圈。',
+    message: '',
   });
 
   const load = useCallback(async () => {
@@ -254,7 +254,7 @@ export function RegionManager() {
         </label>
       </div>
 
-      <Notice tone={notice.tone}>{notice.message}</Notice>
+      {notice.message && <Notice tone={notice.tone}>{notice.message}</Notice>}
 
       {loading ? (
         <p className="creator-import-hint">加载中…</p>
@@ -264,13 +264,13 @@ export function RegionManager() {
           <span>行政区目录尚未整理，暂不能新增商圈。</span>
         </div>
       ) : !districtId ? (
-        <p className="creator-import-hint">请选择行政区以维护商圈。</p>
+        <p className="creator-import-hint">尚未选择行政区。</p>
       ) : (
         <div className="region-manager-grid">
           <div className="region-manager-list">
             {areas.length === 0 && (
               <p className="creator-import-hint">
-                {selectedDistrict?.name} 还没有商圈，用右侧表单新增一个。
+                {selectedDistrict?.name} 还没有商圈。
               </p>
             )}
             {areas.map((area) => (
@@ -363,9 +363,6 @@ export function RegionManager() {
                 </button>
               )}
             </div>
-            <p className="creator-import-hint">
-              bbox 是便于找饭的近似范围，需落在所属城市内；改动即时生效于用户端选择器。
-            </p>
           </form>
         </div>
       )}

@@ -62,7 +62,7 @@ export default function AdminLoginPage() {
       const body = await response.json().catch(() => ({}));
       setNotice({ tone: 'error', message: body.error?.message || loginErrorMessage });
     } catch {
-      setNotice({ tone: 'error', message: '登录请求失败，请检查本地服务是否仍在运行' });
+      setNotice({ tone: 'error', message: '登录请求失败，请稍后重试' });
     } finally {
       setBusy(false);
     }

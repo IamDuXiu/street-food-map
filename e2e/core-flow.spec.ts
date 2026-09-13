@@ -230,14 +230,13 @@ test('匿名价格投稿可查询，管理员独立核验后公开新价格', as
   await expect(page.getByText('¥22.5', { exact: true }).first()).toBeVisible();
 });
 
-test('管理员入口明确为演示模式', async ({ page }) => {
+test('管理员登录后进入后台工作台', async ({ page }) => {
   await page.goto('/admin/login');
-  await expect(page.getByText('本地工作台', { exact: true })).toBeVisible();
   await page.getByLabel('密码').fill('phase1-demo-password');
   await page.getByRole('button', { name: /进入后台工作台/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
   expect(new URL(page.url()).search).toBe('');
-  await expect(page.getByText('本地工作台', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '饭签后台总览' })).toBeVisible();
 });
 
 test('后台登录在 JavaScript 失效时也不会把密码写入 URL', async ({ browser }) => {
@@ -330,7 +329,7 @@ test('用户可以按行政区和商圈浏览全深圳，并看见真实覆盖�
   await expect(directory.nth(10)).toContainText('光明区');
   await expect(directory.nth(11)).toContainText('大鹏新区');
   await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /福田区/ }).click();
-  await page.getByRole('button', { name: /华强北.*待共建/ }).click();
+  await page.getByRole('button', { name: /华强北.*暂无饭签/ }).click();
   await expect(page.getByText('当前范围 · 华强北', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: '这里还没有真实饭签' })).toBeVisible();
 

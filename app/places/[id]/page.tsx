@@ -11,7 +11,6 @@ import { publicPlaceIsEligible } from '@/lib/server/public';
 import type { Place } from '@/lib/types';
 import Image from 'next/image';
 import { verificationMethodLabel } from '@/lib/presentation';
-import { Notice } from '@/components/ui/Notice';
 
 export const dynamic = 'force-dynamic';
 export function generateStaticParams() {
@@ -35,7 +34,6 @@ export default async function PlacePage({
         }>;
       })
     | null = null;
-  let fallback = false;
   try {
     const dbPlace = new PlaceRepository(openDatabase()).get(id);
     if (dbPlace && publicPlaceIsEligible(dbPlace))
@@ -44,7 +42,6 @@ export default async function PlacePage({
     const demo = PLACES.find((item) => item.id === id);
     if (demo) {
       place = demo;
-      fallback = true;
     }
   }
   if (!place) notFound();
@@ -59,11 +56,6 @@ export default async function PlacePage({
     <>
       <SiteHeader />
       <main className="detail-shell public-shell public-page">
-        {fallback && (
-            <Notice tone="info" className="data-notice">
-              当前显示本地演示数据。
-            </Notice>
-        )}
         <Link href="/" className="back-link">
           ← 回到地图
         </Link>

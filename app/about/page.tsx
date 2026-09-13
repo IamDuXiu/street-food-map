@@ -8,9 +8,8 @@ export default function AboutPage() {
       <main className="about-shell public-shell public-page">
         <Link href="/" className="back-link">← 回到地图</Link>
         <div className="about-hero public-page-heading">
-          <p className="kicker">使用说明</p>
-          <h1>先看价格，<em>再看核验日期。</em></h1>
-          <p>街头饭签记录具体餐食、价格和确认方式，帮助你快速判断这一顿是否适合现在去吃。</p>
+          <p className="kicker">规则</p>
+          <h1>收录与核验规则</h1>
         </div>
         <div className="about-columns">
           <section>

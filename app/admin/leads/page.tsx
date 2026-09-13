@@ -11,9 +11,7 @@ export default async function LeadsPage({
   const params = searchParams ? await searchParams : {};
   const draft = typeof params.draft === 'string' ? params.draft : undefined;
   return <AdminShell active="/admin/leads">
-    <AdminTitle eyebrow="02 / CANDIDATES" title="候选池">
-      <span className="demo-pill"><span className="status-dot" />先核验，再导入</span>
-    </AdminTitle>
+    <AdminTitle eyebrow="02 / CANDIDATES" title="候选池" />
     <CandidatePoolWorkspace initialDraftId={draft} />
   </AdminShell>;
 }

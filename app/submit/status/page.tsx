@@ -33,7 +33,7 @@ export default function SubmissionStatusPage() {
       if (!response.ok) setError(body.error?.message || '查询码不正确。');
       else setData(body.data);
     } catch {
-      setError('暂时无法查询，请检查本地服务后重试。');
+      setError('暂时无法查询，请稍后重试。');
     } finally {
       setBusy(false);
     }

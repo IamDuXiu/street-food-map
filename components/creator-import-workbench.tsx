@@ -16,23 +16,7 @@ interface PreviewRow {
   errors: string[];
 }
 
-const SAMPLE = JSON.stringify(
-  [
-    {
-      storeName: '桥底卤肉饭',
-      mealName: '卤肉饭',
-      priceYuan: 12,
-      address: '广州市海珠区客村立交桥底',
-      city: 'guangzhou',
-      platform: 'bilibili',
-      creatorName: '济州土著susu수수',
-      contentUrl: 'https://www.bilibili.com/video/BV1iStG6vEnx/',
-      contentTitle: '朋友说广州好吃的都在桥底下',
-    },
-  ],
-  null,
-  2,
-);
+const SAMPLE = '[]';
 
 async function csrf() {
   const response = await fetch('/api/v1/admin/csrf');
@@ -49,7 +33,7 @@ export function CreatorImportWorkbench() {
   >({});
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string }>({
     tone: 'info',
-    message: '粘贴创作者内容 JSON，先预览再导入。',
+    message: '',
   });
   const [busy, setBusy] = useState(false);
 
@@ -223,11 +207,8 @@ export function CreatorImportWorkbench() {
         <button className="primary-button small-button" type="button" onClick={preview} disabled={busy}>
           {busy ? '处理中…' : '预览校验'}
         </button>
-        <span className="creator-import-hint">
-          字段：storeName / mealName / priceYuan / address / city / platform / creatorName / contentUrl
-        </span>
       </div>
-      <Notice tone={notice.tone}>{notice.message}</Notice>
+      {notice.message && <Notice tone={notice.tone}>{notice.message}</Notice>}
 
       {rows.length > 0 && (
         <div className="creator-import-rows">
@@ -318,9 +299,6 @@ export function CreatorImportWorkbench() {
             >
               {busy ? '正在导入…' : '确认导入（全部或全不写入） ↗'}
             </button>
-            <span className="creator-import-hint">
-              价格为创作者标注价，导入后以「未核验」公开，不计入已核验。
-            </span>
           </div>
         </div>
       )}

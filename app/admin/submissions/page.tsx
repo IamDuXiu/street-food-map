@@ -26,12 +26,7 @@ export default async function SubmissionsPage({
   const media = active ? listSubmissionMedia(db, active.id) : [];
   return (
     <AdminShell active="/admin/submissions">
-      <AdminTitle eyebrow="03 / SUBMISSIONS" title="投稿审核队列">
-        <span className="demo-pill">
-          <span className="status-dot" />
-          数据库工作台
-        </span>
-      </AdminTitle>
+      <AdminTitle eyebrow="03 / SUBMISSIONS" title="投稿审核队列" />
       <div className="review-layout">
         <section className="review-list">
           {items.map((item) => (
@@ -108,10 +103,6 @@ export default async function SubmissionsPage({
                 ))}
               </div>
             )}
-            <div className="review-warning">
-              公开 DTO 不包含来源链接、后台备注或原始
-              payload；通过前请确认核验依据。
-            </div>
             <SubmissionActions
               id={active.id}
               type={active.type}
