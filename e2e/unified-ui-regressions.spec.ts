@@ -50,7 +50,7 @@ test('区域选择器打开后聚焦搜索框，Escape 关闭并恢复触发按�
   await expect(trigger).toBeFocused();
 
   await trigger.click();
-  await page.getByRole('navigation', { name: '深圳行政区' }).getByRole('button', { name: /南山区/ }).click();
+  await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /南山区/ }).click();
   await expect(dialog.getByText('南山区 / 商圈')).toBeVisible();
   await page.getByLabel('搜索行政区或商圈').fill('科技园');
   await expect(dialog.getByRole('button', { name: /科技园.*已有饭签/ })).toBeVisible();

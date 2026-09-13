@@ -13,7 +13,7 @@ test('用户可以筛选、打开地点详情并导航', async ({ page }) => {
   await budget25.click();
   await expect(budget25).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /选择区域/ }).click();
-  await page.getByRole('navigation', { name: '深圳行政区' }).getByRole('button', { name: /南山区/ }).click();
+  await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /南山区/ }).click();
   await page.getByRole('button', { name: /科技园.*已有饭签/ }).click();
   await expect(
     page
@@ -52,7 +52,7 @@ test('地图和列表可互相选择，定位拒绝时仍可浏览', async ({ pa
     page.locator('.results-panel a.card-link').first(),
   ).toBeVisible();
   await page.getByRole('button', { name: /选择区域/ }).click();
-  await page.getByRole('navigation', { name: '深圳行政区' }).getByRole('button', { name: /南山区/ }).click();
+  await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /南山区/ }).click();
   await page.getByRole('button', { name: /科技园.*已有饭签/ }).click();
   await expect(
     page
@@ -215,7 +215,7 @@ test('匿名价格投稿可查询，管理员独立核验后公开新价格', as
   await page.getByRole('button', { name: /进入后台工作台/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await page.goto('/admin/submissions');
-  await expect(page.getByText(/价格变化|new_price/).first()).toBeVisible();
+  await expect(page.getByText(/价格有变化|new_price/).first()).toBeVisible();
   await page.getByRole('combobox', { name: '独立核验方式' }).click();
   await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="onsite_menu"]').click();
   await page.getByLabel('我已独立核验').check();
@@ -329,7 +329,7 @@ test('用户可以按行政区和商圈浏览全深圳，并看见真实覆盖�
   await expect(directory.nth(4)).toContainText('南山区');
   await expect(directory.nth(10)).toContainText('光明区');
   await expect(directory.nth(11)).toContainText('大鹏新区');
-  await page.getByRole('navigation', { name: '深圳行政区' }).getByRole('button', { name: /福田区/ }).click();
+  await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /福田区/ }).click();
   await page.getByRole('button', { name: /华强北.*待共建/ }).click();
   await expect(page.getByText('当前范围 · 华强北', { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: '这里还没有真实饭签' })).toBeVisible();
