@@ -23,7 +23,9 @@
     "maintenance": "tsx scripts/maintenance.ts",
     "fresh-start": "node --import tsx scripts/fresh-start-check.mjs",
     "phase5:check": "node scripts/phase5-check.mjs",
-    "seed:candidates": "tsx scripts/seed-candidate-pool.ts"
+    "seed:candidates": "tsx scripts/seed-candidate-pool.ts",
+    "seed:regions": "tsx scripts/seed-regions.ts",
+    "collect:creators": "tsx scripts/creator-collect.ts"
   },
   "dependencies": {
     "better-sqlite3": "11.10.0",

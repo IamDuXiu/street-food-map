@@ -3,6 +3,7 @@ import {
   ageInDays,
   freshness,
   freshnessLabel,
+  relativePublishedLabel,
   relativeVerificationLabel,
 } from '@/lib/freshness';
 
@@ -40,6 +41,12 @@ describe('新鲜度分档', () => {
     expect(
       relativeVerificationLabel({ observedAt: daysAgo(0), ageDays: 3 }, now),
     ).toBe('3 天前核验');
+    expect(relativePublishedLabel({ observedAt: daysAgo(0) }, now)).toBe(
+      '今天发布',
+    );
+    expect(relativePublishedLabel({ observedAt: daysAgo(2) }, now)).toBe(
+      '2 天前发布',
+    );
   });
 
   it('ageInDays 从日期字符串计算天数', () => {

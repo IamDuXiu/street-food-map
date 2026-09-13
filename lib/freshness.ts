@@ -39,3 +39,14 @@ export function relativeVerificationLabel(
   if (days === 1) return '1 天前核验';
   return `${days} 天前核验`;
 }
+
+/** Same window, but for creator-sourced (not independently verified) entries. */
+export function relativePublishedLabel(
+  meal: { observedAt: string; ageDays?: number },
+  now = new Date(),
+): string {
+  const days = meal.ageDays ?? ageInDays(meal.observedAt, now);
+  if (days <= 0) return '今天发布';
+  if (days === 1) return '1 天前发布';
+  return `${days} 天前发布`;
+}

@@ -1,5 +1,14 @@
 # 阶段 5 准备进度
 
+## 统一 UI 基础（2026-09-12）
+
+- [x] 建立白/浅灰/黑色 foundation tokens、1px 边框、8–12px 圆角、克制珊瑚品牌色、可见焦点和 40–44px 控件基线。
+- [x] 公共 `Notice`（显式 error/success/info tone）与 `ConfirmDialog` 组件及 class 合同，ARIA role 不再推断绿色；确认弹窗支持焦点循环/恢复、Esc 锁定、异步失败可重试且防重复。
+- [x] 统一公共/后台头部与后台浅灰侧栏；移除站点头部 `SHENZHEN / 01` 与演示旧标签，登录侧栏隐藏、蜜罐可靠离屏、loading 壳稳定。
+- [x] 更新首页/最近核验条关键辅助文字可读性；地图 SDK 容器与腾讯 logo 未触碰。
+
+交接合同详见 [`docs/UI_GUIDELINES.md`](./UI_GUIDELINES.md)。详情/投稿/后台页面仍由对应页面 agent 做最终截图微调。
+
 更新时间：2026-09-11（首页/详情可用性优化 8 项完成）
 
 ## 首页/详情可用性优化（2026-09-11）
@@ -115,3 +124,86 @@
 - 手机通过 HTTP 局域网地址访问时通常无法授予浏览器定位权限；阶段 5 手机测试使用区域选择器并观察回退。真实手机定位同意流程仍需 HTTPS 测试地址，当前未验证。
 - 公开查询 API 已支持距离、价格和新鲜度排序；首页手动排序控件已于 2026-09-08 上线并纳入本轮任务测试评估。`analytics_events` 表和清理策略已存在，但用户行为事件写入尚未接通，仍延后到首轮复盘决定；不应误认为已经完成。
 - Next 16.3.4 的开发模式曾触发只读 `AGENTS.md` EACCES；本轮配置 `agentRules:false` 后服务已持续运行并成功响应，但需后续版本持续观察，不能修改项目指令文件规避。
+
+## 创作者来源数据层（2026-09-13）
+
+- migration 008（`regions` 区域目录）与 009（`creators` / `creator_accounts` / `entity_sources`，及 `source_leads` 的 `creator_id/platform/content_title/content_url/published_at/city/play_count/public_visibility` 列）；schema 7 → 9。
+- `scripts/seed-regions.ts`：幂等回填深圳完整目录（10 区 + 64 商圈）+ 珠三角其余 8 市市级行，接入 `npm run setup` 与新增 `npm run seed:regions`。
+- `lib/server/sources.ts`：来源标签 `platform@creator` 去重、按平台与创作者名稳定排序后以 `;` 拼接；`entity_sources` 幂等读写；公开读模型挂载地点级 `sources` 与菜品级 `source`。
+- `lib/server/repository.ts` + `lib/server/public.ts`：无已核验价时，创作者价（`external_lead`）作为兜底餐食公开并标记 `unverified`；公开资格谓词与最低价纳入创作者来源；`freshest_observed_at` 仍只取已核验价（「最近核验」不受影响）。
+- `lib/trust.ts` + `lib/types.ts`：新增 `低可信` 等级，`external_lead → 低可信`；`placeTrust` 仅把非低可信餐食计入已核验次数。
+- `lib/server/geocode.ts`：腾讯 WebService Geocoder 服务端封装（可注入 fetch）；无 Key / 非 0 状态 / 网络异常一律安全返回空数组，Key 只从 `TENCENT_MAP_WEB_SERVICE_KEY` 读取、不落日志。
+- `scripts/restore.ts` / `scripts/backup.ts`：支持 schema 4–9 备份恢复，关键表 JSON 增加新表。
+
+验证（本机 `npm run lint` / `npm run typecheck` / `npm test`）：通过，20 个文件 111 个测试；新增 `sources`、`creator-public`、`geocode`、`seed-regions` 测试与迁移 schema 9 断言。注意：区域运行时目录仍读 `lib/regions.ts`（双轨，尚未切换到 DB）；创作者内容的导入/管理后台仍在后续切片。
+
+### 创作者来源用户端展示（2026-09-13）
+
+- `components/place-card.tsx`：创作者来源的卡片显示「创作者来源 · 未核验」、`来源 bilibili@…` 行与价格旁「未核验」标签；时间文案改用 `relativePublishedLabel`（「今天发布 / N 天前发布」），不再冒充「核验」。
+- `app/places/[id]/page.tsx`：价格区显示「未核验 · 创作者来源」；未核验餐食行显示来源而非核验日期；新增右栏「内容来源」（`platform@creator` 列表）+ 未核验免责声明。
+- `lib/freshness.ts`：新增 `relativePublishedLabel`。
+- `app/globals.css`：新增 `.source-label`、`.unverified-tag`、`.source-cloud`。
+- `lib/server/public.ts`：公开 DTO 透传 `sources`。
+- 验证：`npm run build` 通过；用临时库造「仅创作者来源」门店，生产服务实际渲染确认卡片与详情页均显示来源与未核验标识。`npm test` 111 通过。
+
+尚未做：创作者内容导入/管理后台与地理编码确认接口。
+
+### 区域目录运行时切换 DB + 珠三角城市切换（2026-09-13）
+
+- `lib/server/region-repository.ts`：从 `regions` 表构建「城市 → 行政区 → 商圈」目录，覆盖状态由 bbox 内是否存在公开点位派生；`listRegionCities()` 返回珠三角 9 市；表为空时返回 null 并打印一次告警，回退静态 `lib/regions.ts`。
+- `app/api/v1/config/route.ts`：支持 `?city=<id>`，区域目录改由 DB 提供，DB 不可用或表空时回退静态目录。
+- `components/home-client.tsx`：新增 `cityId` 状态，按城市拉取 config；切换城市时重置所选区域、定位与视野；`nearbyViewport` 无定位时回退当前城市而非写死深圳；城市随会话状态一起恢复。
+- `components/region-picker.tsx`：新增城市切换器（9 市），标题/导航/「全城」图标改用当前城市；无下级目录的城市显示「目录整理中」而非空白。
+- `scripts/seed-regions.ts`：广州 bbox 东界由 114.06 收紧到 113.74，避免与深圳数据在 bbox 查询上串城。
+- 测试：新增 `tests/region-repository.test.ts`（DB 构建、覆盖派生、空目录城市、空表回退、config 按城市返回），共 21 文件 116 测试通过；`build` 通过；临时库真机验证城市切换后仅返回该城市结果。
+
+已知限制：城市/商圈仍以近似 bbox 划分，相邻城市边界可能重叠；彻底解决需给 `places`/`pilot_zones` 增加明确城市归属。`lib/regions.ts` 仍是双轨回退来源，后台区域管理页尚未实现。
+
+### 创作者内容导入 + 地理编码确认接口（2026-09-13）
+
+- `lib/server/creator-import.ts`：创作者内容记录（店名/菜品/价格/地址/城市/平台/UP主/视频链接）的校验、预览与提交。预览缺坐标时调用腾讯地理编码并把候选坐标回传；提交在单事务内复用/新建门店（归一化店名 + ≤150m 合并）、去重菜品、写最新 `external_lead` 价格（旧 pending 置 superseded）、聚合 `entity_sources`（地点级 + 菜品级）、登记 `source_leads`（`public_visibility='listed'`）并审计；按城市自动创建「创作者来源」试点片区（`creator-<city>`）。价格上限 25 元、坐标限珠三角范围。
+- 新增管理接口：`POST /api/v1/admin/creator-import/preview`、`POST /api/v1/admin/creator-import/commit`（写操作 + Origin/CSRF）、`POST /api/v1/admin/geocode`（地址→GCJ-02 候选，无 Key 安全返回空）。
+- 测试：新增 `tests/creator-import.test.ts`（预览/地理编码注入/待确认坐标/越界拒绝、同店多来源合并与来源聚合、提交后公开为未核验低可信、缺坐标回滚、三个路由的鉴权与 CSRF 集成），全量 22 文件 126 测试通过；`build` 通过，三个路由已进入产物。
+
+尚未做：创作者内容抓取脚本。
+
+### 后台区域目录管理页（2026-09-13）
+
+- `lib/server/region-repository.ts`：新增 `listAdminRegions` / `createRegion` / `patchRegion` 与 `RegionError`；校验 bbox 顺序、中心落在 bbox 内、层级与父级合法（城市无父级、行政区挂城市、商圈挂行政区）、区域落在所属城市范围内、同父级名称唯一；城市与行政区不可停用（仅商圈可 `active=0`）；写操作全部 `recordAudit`。
+- 新增管理接口：`GET/POST /api/v1/admin/regions`、`PATCH /api/v1/admin/regions/:id`（写操作 + Origin/CSRF）；`lib/server/validation.ts` 新增 `regionCreateSchema` / `regionPatchSchema`。
+- 新增 `app/admin/regions/page.tsx` + `components/region-manager.tsx`：选城市/行政区 → 列出商圈（启用/停用、编辑）→ 新增/修改商圈表单（bbox、中心、zoom、排序）。后台导航新增「区域目录」。
+- 测试：新增 `tests/region-admin.test.ts`（新增/改名/停用与目录联动、非法 bbox/越界/父级/重名拒绝、城市与行政区不可停用、接口 401 与增改集成），全量 23 文件 131 测试通过；`build` 通过。
+- 验证：生产服务真机走查——登录后台 → 区域目录 → 选深圳市/南山区 → 新增「南头古城」→ 提示「商圈已新增」；`/api/v1/config?city=shenzhen` 的南山区商圈列表已含「南头古城」，即改即生效于用户端。
+
+尚未做：创作者内容抓取脚本。
+
+### 后台创作者导入页（2026-09-13）
+
+- 新增 `app/admin/creator-import/page.tsx` + `components/creator-import-workbench.tsx`：粘贴创作者内容 JSON → 预览校验（缺坐标显示「待确认坐标」）→ 逐条「解析地址」调 `/api/v1/admin/geocode` 取候选或手填经纬度 → 「确认导入」调 `/api/v1/admin/creator-import/commit`（自动取 CSRF，全部或全不写入）。行内显示就绪/待确认/非法状态、是否合并到已有门店。
+- `components/admin-shell.tsx`：后台导航新增「06 创作者导入」入口。
+- `app/globals.css`：新增 `.creator-import-*` 样式（含移动端单列）。
+- 验证：`lint` / `typecheck` / `test`（22 文件 126 测试）/ `build` 全通过；生产服务真机走查——登录后台 → 打开创作者导入页 → 预览得到「待确认坐标」→ 手填坐标后提交「已导入 1 条（新建门店 1 个）」→ 用户端地图出现「创作者来源 · 未核验 / 来源 bilibili@济州土著susu수수 / 未核验 ¥12」。
+
+### 创作者内容采集脚本（2026-09-13）
+
+- 新增 `scripts/creator-collect.ts`（`npm run collect:creators`）：B站关键词检索 + 可选 YouTube 频道 RSS，归一化为可粘贴到 `/admin/creator-import` 的 JSON（默认 `outputs/creator-collect.json`，运行时目录，已被 gitignore）。
+- 导出纯函数便于测试：`extractPrices/pickBudgetPrice`、`detectCity`（含「中山路/中山八」歧义排除）、`deriveMealName`、`extractStoreName`、`extractAddress`、`videoToLead`、`parseBilibiliSearch`、`searchBilibiliVideos`、`parseYoutubeFeed`、`fetchYoutubeChannelVideos`、`collectCreatorLeads`、`mergeCollectRecords`。
+- CLI：`--keywords / --youtube / --pages / --delay-ms / --out / --strict / --no-merge / --help`；自动读取 `.env.local` 中可选 `BILIBILI_COOKIE`。
+- 策略：价格 >25 元、非珠三角城市、重复内容链接直接跳过；店名/地址缺失写「待补」占位并在 `collect.*` 标记；`--strict` 只保留已抽出店名与地址的记录。
+- 测试：新增 `tests/creator-collect.test.ts`（13 例：金额/城市/菜品/店名/地址抽取、schema 兼容、B站与 YouTube 解析、跨关键词去重与 strict、输出合并），全量 `npm test` 24 文件 144 测试通过；`npm run lint` / `npm run typecheck` / `npm run build` 全通过。
+- 真实抓取（2026-09-13，默认 12 词 / `--pages 1`）：抓取 220 条 → 产出 35 条（广州 15 / 深圳 10 / 佛山 3 / 珠海 3 / 东莞 1 / 惠州 1 / 江门 1 / 肇庆 1）；可信命名 2 条（`张槎海口两肉一菜快餐店`、`宏兴茶餐厅`，与线索文档高置信回填一致），其余为待补占位。skip：无预算价 137、非探店 28、重复 16、请求失败 1、无城市 1。产出在 `outputs/creator-collect.json`（gitignore）。
+- 首轮暴露的噪声/限流已加固：非探店标题过滤、店名抽取收紧（拒绝数字/价格/通用营销词/创作者名、`丨` 分段取店名）、地址含「的/！/？」判无效、B站 `-412` 线性退避重试（最多 3 次）、CLI 默认 `--delay-ms 1500`。
+- 新增 `tests/creator-collect-import.test.ts`：采集记录补坐标后经 `previewCreatorImport` / `commitCreatorImport` 进入公开地图，验证 `宏兴茶餐厅` 为「低可信」且来源 `bilibili@粤城旧事`——打通「采集 → 预览 → 提交 → 用户端」服务端链路。
+- 验证：`npm run lint` / `npm run typecheck` / `npm test`（**25 文件 147 测试**）/ `npm run build`（exit 0）全通过。
+- 浏览器端到端走查（2026-09-13，隔离临时实例，端口 3210，未触碰真实数据/凭据）：`npm run setup` 建临时库并设临时管理员 → 浏览器登录后台 → 创作者导入页粘贴采集记录 JSON（宏兴茶餐厅，含坐标）→ 「预览校验」显示「1 条就绪」→ 「确认导入」返回「已导入 1 条（新建门店 1 个）」；DB 校验：`places` active、`menu_items` 1 条、`price_reports` `external_lead` 2000 分 `pending`、`entity_sources` 地点+菜品级各 1 条、`source_leads` `listed`；公开 `GET /api/v1/places/:id` 返回 `verification=低可信`、`sources=bilibili@粤城旧事`、餐食 `unverified=true`，`GET /api/v1/map?city=guangzhou` 命中该点。临时实例已停止、临时目录已删除。
+- 腾讯自动地理编码已验证（2026-09-13，Key 仅写入 gitignored `.env.local`，不入库/不进 Git/不落日志）：直连 `apis.map.qq.com/ws/geocoder/v1/` 返回 `status=0`；`geocodeAddress('广州市番禺区南村镇金江大道217-219号')` → `113.387066,23.004642`；`previewCreatorImport` 对该地址返回 `ready` 且带 1 个候选。
+- 该验证暴露并修复一个数据质量缺陷：采集脚本写的「广州市（待补地址）」占位地址会被腾讯模糊匹配到市中心，导致预览误判 `ready`。新增 `isPlaceholderAddress()`（`lib/server/geocode.ts`），`geocodeAddress` 对含「待补/待确认/待定位/占位/TODO」的地址直接返回空，`previewCreatorImport` 明确报「地址是「待补」占位…」并标 `needs_coordinates`；复测：真实地址 `ready`、占位地址 `needs_coordinates` 且不发起请求。
+- 验证：`npm run lint` / `npm run typecheck` / `npm test`（**25 文件 149 测试**）/ `npm run build`（exit 0）全通过。
+
+### 采集结果复核包（2026-09-13）
+
+- 合并去重「采集 35 ∪ 候选勾选 46 ∪ §4.5.2 精确回填 5」→ **75 条**，产出文档仓 `LEADS-复核队列-2026-09-13.md`：分「可直接入库 4 / 有候选 POI 待勾选 46 / 仅采集需看片补录 24 / 待补价格 1（首尔餐厅）」四类。
+- 生成 `outputs/creator-import-ready.json`（4 条：好大碗牛腩粉、现炒快餐、香港才记牛什粉面店、宏兴茶餐厅；元数据取自 `LEADS-创作者-珠三角.md` / `LEADS-创作者-susu.md`，非臆造）。临时库验证：`creatorImportRecordSchema` 全部通过、`previewCreatorImport` 4 条 `ready`、`commitCreatorImport` 新建 4 个门店、公开为「低可信」且来源标签正确（`bilibili@阿邓来了b站版` 等）。
+- **未**写正式库（`data/budget-map.sqlite`，只读核对为 5 个 demo 点、regions 空）：入库待用户确认，可粘贴 `creator-import-ready.json` 到 `/admin/creator-import` 或经脚本导入。
+- 残留噪声（已在复核文档标注、无功能影响）：采集结果里仍有「厂/中介/挑战吃一天/外地店」等非探店或非珠三角条目落入「需看片补录」清单，需人工剔除。
+- **已导入正式库（2026-09-13）**：先 `npm run backup`（`backups/budget-map-backup-20260913063923.zip`）+ `npm run seed:regions`（regions 0→83），再用 `commitCreatorImport` 写入 4 条（`places` 5→9；`pilot_zones` 新增 `creator-foshan/shenzhen/guangzhou`）。实时校验：`GET /api/v1/map` 返回 9 点，4 条均为「低可信」带来源标签；`GET /api/v1/places/:id` 返回 `unverified=true` 与正确来源；`bbox` 按城市命中（佛山→牛腩粉、深圳→现炒快餐/才记、广州→宏兴）。已知：广州 bbox 会纳入佛山点（相邻城市 bbox 重叠，待根治）。导入脚本为临时文件，已删除。

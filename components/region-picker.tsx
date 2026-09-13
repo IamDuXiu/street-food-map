@@ -29,11 +29,13 @@ export function RegionPicker({
   selectedRegion,
   onSelect,
   onLocate,
+  onSelectCity,
 }: {
   catalog: ShenzhenRegionCatalog;
   selectedRegion: ShenzhenRegion | null;
   onSelect: (region: ShenzhenRegion) => void;
   onLocate: () => void;
+  onSelectCity?: (cityId: string, label: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -158,7 +160,7 @@ export function RegionPicker({
           >
             <header className="region-picker-header">
               <div>
-                <p className="kicker">深圳 / 区域目录</p>
+                <p className="kicker">{catalog.city.label} / 区域目录</p>
                 <h2 id="region-picker-title">选一个吃饭范围</h2>
               </div>
               <button
@@ -170,6 +172,28 @@ export function RegionPicker({
                 ×
               </button>
             </header>
+
+            {catalog.cities && catalog.cities.length > 1 && onSelectCity && (
+              <div className="region-city-switch" role="group" aria-label="切换城市">
+                <span className="region-city-switch-label">城市</span>
+                <div className="region-city-switch-options">
+                  {catalog.cities.map((city) => (
+                    <button
+                      key={city.id}
+                      type="button"
+                      className={city.id === catalog.city.id ? 'active' : ''}
+                      aria-pressed={city.id === catalog.city.id}
+                      onClick={() => {
+                        onSelectCity(city.id, city.label);
+                        closePicker();
+                      }}
+                    >
+                      {city.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="region-city-context" role="group" aria-label="当前城市">
               <span className="region-city-context-label">当前城市</span>
@@ -208,13 +232,20 @@ export function RegionPicker({
                 ) : (
                   <div className="region-no-result">
                     <strong>还没有这个区域</strong>
-                    <span>目前先覆盖深圳市行政区和首批常用商圈。</span>
+                    <span>目前先覆盖{catalog.city.label}行政区和首批常用商圈。</span>
                   </div>
                 )}
               </div>
+            ) : catalog.districts.length === 0 ? (
+              <div className="region-no-result">
+                <strong>目录整理中</strong>
+                <span>
+                  {catalog.city.label}的行政区与商圈正在补充，会随数据逐步补齐。
+                </span>
+              </div>
             ) : (
               <div className="region-browser">
-                <nav aria-label="深圳行政区" className="district-rail">
+                <nav aria-label={`${catalog.city.label}行政区`} className="district-rail">
                   <div className="district-rail-scope">
                     <button
                       type="button"
@@ -234,7 +265,7 @@ export function RegionPicker({
                       aria-current={activeDirectoryId === 'city' ? 'true' : undefined}
                       onClick={() => choose(catalog.city)}
                     >
-                      <span className="district-scope-mark" aria-hidden="true">深</span>
+                      <span className="district-scope-mark" aria-hidden="true">{catalog.city.label.slice(0, 1)}</span>
                       <span>
                         <strong>全城</strong>
                         <small>查看全部饭签</small>

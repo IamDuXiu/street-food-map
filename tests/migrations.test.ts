@@ -19,6 +19,8 @@ const migrationFiles = [
   '005_submission_tokens_limits.sql',
   '006_candidate_pool.sql',
   '007_candidate_pool_reconcile.sql',
+  '008_regions.sql',
+  '009_creator_sources.sql',
 ];
 
 afterEach(() => {
@@ -108,15 +110,76 @@ function makeTarget(root: string) {
 }
 
 describe('database migration reconciliation', () => {
-  it('fresh databases reach schema 7 with the matched column and delete trigger', () => {
+  it('fresh databases reach schema 9 with the matched column and delete trigger', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-fresh-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'fresh.sqlite'));
     const objects = schemaObjects(db);
-    expect(objects.version).toBe(7);
+    expect(objects.version).toBe(9);
     expect(objects.matchedColumn).toBe(true);
     expect(objects.matchedForeignKey).toBe(true);
     expect(objects.trigger?.name).toBe('source_leads_referenced_delete');
+    db.close();
+  });
+
+  it('fresh schema 9 adds region catalog and creator-source tables/columns', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-creator-'));
+    roots.push(root);
+    const db = openDatabase(path.join(root, 'creator.sqlite'));
+    const tables = (
+      db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all() as Array<{ name: string }>
+    ).map((row) => row.name);
+    expect(tables).toEqual(
+      expect.arrayContaining([
+        'regions',
+        'creators',
+        'creator_accounts',
+        'entity_sources',
+      ]),
+    );
+    const leadColumns = (
+      db.pragma('table_info(source_leads)') as Array<{ name: string }>
+    ).map((column) => column.name);
+    expect(leadColumns).toEqual(
+      expect.arrayContaining([
+        'creator_id',
+        'platform',
+        'content_title',
+        'content_url',
+        'published_at',
+        'city',
+        'play_count',
+        'public_visibility',
+      ]),
+    );
+    const now = new Date().toISOString();
+    db.prepare(
+      "INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,active) VALUES ('creator-zone','创作者片区','student',113.9,22.5,1)",
+    ).run();
+    db.prepare(
+      'INSERT INTO places(id,zone_id,name,normalized_name,address,lng,lat,category,access_type,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+    ).run('creator-place', 'creator-zone', '创作者店', '创作者店', '创作者地址', 113.9, 22.5, '快餐', 'public', now, now);
+    db.prepare(
+      'INSERT INTO menu_items(id,place_id,name,normalized_name,category,created_at,updated_at) VALUES (?,?,?,?,?,?,?)',
+    ).run('creator-menu', 'creator-place', '创作者餐食', '创作者餐食', '米饭', now, now);
+    // A creator clue (external_lead) can never become a verified price.
+    expect(() =>
+      db
+        .prepare(
+          'INSERT INTO price_reports(id,menu_item_id,price_fen,observed_at,verification_method,status,created_at) VALUES (?,?,?,?,?,?,?)',
+        )
+        .run('creator-price', 'creator-menu', 1200, '2026-09-01', 'external_lead', 'verified', now),
+    ).toThrow();
+    // One entity + platform + creator is recorded once (idempotent source dedupe).
+    const insertSource = db.prepare(
+      'INSERT INTO entity_sources(entity_type,entity_id,platform,creator_name,content_url,observed_at,created_at) VALUES (?,?,?,?,?,?,?)',
+    );
+    insertSource.run('place', 'creator-place', 'bilibili', '某UP主', 'https://example.com/v', '2026-09-01', now);
+    expect(() =>
+      insertSource.run('place', 'creator-place', 'bilibili', '某UP主', 'https://example.com/v2', '2026-09-02', now),
+    ).toThrow();
     db.close();
   });
 
@@ -130,12 +193,12 @@ describe('database migration reconciliation', () => {
     const missingDb = openDatabase(missing);
     const existingDb = openDatabase(existing);
     expect(schemaObjects(missingDb)).toMatchObject({
-      version: 7,
+      version: 9,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     expect(schemaObjects(existingDb)).toMatchObject({
-      version: 7,
+      version: 9,
       matchedColumn: true,
       matchedForeignKey: true,
     });
@@ -143,7 +206,7 @@ describe('database migration reconciliation', () => {
     existingDb.close();
   });
 
-  it('opening schema 7 again is idempotent and preserves key schema objects', () => {
+  it('opening schema 9 again is idempotent and preserves key schema objects', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-repeat-'));
     roots.push(root);
     const file = path.join(root, 'repeat.sqlite');
@@ -156,7 +219,7 @@ describe('database migration reconciliation', () => {
     second.close();
   });
 
-  it('schema-7 delete trigger blocks removing a lead referenced by a price', () => {
+  it('schema-9 delete trigger blocks removing a lead referenced by a price', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-trigger-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'trigger.sqlite'));
@@ -185,7 +248,7 @@ describe('database migration reconciliation', () => {
     db.close();
   });
 
-  it('restores a schema-4 archive by migrating staging to schema 7', async () => {
+  it('restores a schema-4 archive by migrating staging to schema 9', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema4-'));
     roots.push(root);
     const legacy = path.join(root, 'legacy.sqlite');
@@ -199,18 +262,18 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 7,
+      version: 9,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     restored.close();
   });
 
-  it('schema-7 backup round-trip keeps the reconciled schema objects', async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema7-'));
+  it('schema-9 backup round-trip keeps the reconciled schema objects', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema9-'));
     roots.push(root);
     const source = openDatabase();
-    expect(schemaObjects(source)).toMatchObject({ version: 7, matchedColumn: true });
+    expect(schemaObjects(source)).toMatchObject({ version: 9, matchedColumn: true });
     const archive = await createBackup(path.join(root, 'backups'));
     const target = makeTarget(root);
     await restoreBackup(archive, 'RESTORE-BUDGET-MAP', {
@@ -220,7 +283,7 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 7,
+      version: 9,
       matchedColumn: true,
       matchedForeignKey: true,
     });

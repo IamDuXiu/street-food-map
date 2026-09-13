@@ -30,10 +30,10 @@ export function toPublicPlace(
     note: place.note,
     meals: place.meals.filter(
       (meal) =>
-        meal.method !== 'external_lead' &&
         meal.priceFen <= Math.min(maxPriceFen, 2500) &&
         new Date(meal.observedAt).getTime() >= cutoff,
     ),
+    ...(place.sources ? { sources: place.sources } : {}),
     verification: place.verification,
     evidence: (place.evidence ?? []).map((item) => ({
       id: item.id,
@@ -51,7 +51,6 @@ export function publicPlaceIsEligible(place: DbPlace, now = new Date()) {
     ['open', 'unknown'].includes(place.businessStatus) &&
     place.meals.some(
       (meal) =>
-        meal.method !== 'external_lead' &&
         meal.priceFen <= 2500 && new Date(meal.observedAt).getTime() >= cutoff,
     )
   );

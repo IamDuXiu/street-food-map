@@ -5,7 +5,7 @@ import { requireAdminPage } from '@/lib/server/page-auth';
 import { openDatabase } from '@/lib/server/db';
 import { dashboardSummary } from '@/lib/server/repository';
 
-const links: Array<[string, string]> = [['/admin', '总览'], ['/admin/leads', '线索池'], ['/admin/submissions', '投稿审核'], ['/admin/places', '地点与餐食'], ['/admin/import', '导入'], ['/admin/exports', '导出备份'], ['/admin/audit-log', '审计记录']];
+const links: Array<[string, string]> = [['/admin', '总览'], ['/admin/leads', '线索池'], ['/admin/submissions', '投稿审核'], ['/admin/places', '地点与餐食'], ['/admin/import', '导入'], ['/admin/creator-import', '创作者导入'], ['/admin/regions', '区域目录'], ['/admin/exports', '导出备份'], ['/admin/audit-log', '审计记录']];
 
 const badgeKeys: Record<string, 'activeLeads' | 'pendingSubmissions'> = {
   '/admin/leads': 'activeLeads',

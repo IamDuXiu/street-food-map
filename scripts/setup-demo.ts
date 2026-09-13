@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openDatabase } from '../lib/server/db';
 import { seedDemo } from '../lib/server/seed';
+import { seedRegions } from './seed-regions';
 import { hashPassword, verifyPassword } from '../lib/server/auth';
 import { randomBytes } from 'node:crypto';
 
@@ -25,6 +26,7 @@ fs.mkdirSync(path.resolve(process.env.UPLOADS_DIR ?? 'uploads'), { recursive: tr
 fs.mkdirSync(path.resolve(process.env.BACKUPS_DIR ?? 'backups'), { recursive: true });
 const db = openDatabase();
 seedDemo(db);
+seedRegions(db);
 const currentSetting = db.prepare('SELECT password_hash FROM admin_settings WHERE id=1').get() as { password_hash: string } | undefined;
 const configuredHash = process.env.ADMIN_PASSWORD_HASH || (process.env.ADMIN_PASSWORD ? (currentSetting && verifyPassword(process.env.ADMIN_PASSWORD, currentSetting.password_hash) ? currentSetting.password_hash : hashPassword(process.env.ADMIN_PASSWORD)) : '');
 if (configuredHash) db.prepare('INSERT INTO admin_settings(id,password_hash,password_version,updated_at) VALUES (1,?,?,?) ON CONFLICT(id) DO UPDATE SET password_hash=excluded.password_hash,password_version=CASE WHEN admin_settings.password_hash=excluded.password_hash THEN admin_settings.password_version ELSE admin_settings.password_version+1 END,updated_at=excluded.updated_at').run(configuredHash, 1, new Date().toISOString());

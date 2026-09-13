@@ -12,7 +12,7 @@ export type Tag =
   | '学校食堂'
   | '便利店';
 
-export type VerificationLevel = '高可信' | '中高可信' | '中可信' | '近期核验';
+export type VerificationLevel = '高可信' | '中高可信' | '中可信' | '低可信' | '近期核验';
 
 export interface Meal {
   id: string;
@@ -26,6 +26,10 @@ export interface Meal {
   ageDays?: number;
   previousPriceFen?: number;
   priceChange?: { direction: 'up' | 'down'; deltaFen: number };
+  /** `platform@creator;...` when the meal price comes from creator content. */
+  source?: string;
+  /** True when the price is creator-sourced and not independently verified. */
+  unverified?: boolean;
 }
 
 export interface Place {
@@ -41,6 +45,8 @@ export interface Place {
   note: string;
   meals: Meal[];
   verification: VerificationLevel;
+  /** Aggregated `platform@creator;...` sources for the place (creator content). */
+  sources?: string;
   distanceMeters?: number;
 }
 

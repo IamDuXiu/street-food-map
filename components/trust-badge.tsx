@@ -1,6 +1,6 @@
 function trustClass(label: string): string {
   if (label === '中高可信' || label === '中可信') return 'trust-mid';
-  if (label === '可能过期' || label === '已过期' || label === '超过 180 天')
+  if (label === '低可信' || label === '可能过期' || label === '已过期' || label === '超过 180 天')
     return 'trust-low';
   return '';
 }

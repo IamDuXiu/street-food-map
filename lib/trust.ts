@@ -5,6 +5,7 @@ const RANK: Record<VerificationLevel, number> = {
   中高可信: 2,
   中可信: 1,
   近期核验: 1,
+  低可信: 0,
 };
 
 /** Map a price report verification method to its public trust level. */
@@ -16,6 +17,8 @@ export function verificationLevelForMethod(method: string): VerificationLevel {
     case 'official_menu':
     case 'community_confirmed':
       return '中高可信';
+    case 'external_lead':
+      return '低可信';
     default:
       return '中可信';
   }
@@ -46,10 +49,13 @@ export function placeTrust(meals: Array<{ method: string }>): {
   level: VerificationLevel;
   verifiedCount: number;
 } {
-  let level: VerificationLevel = '中可信';
+  if (meals.length === 0) return { level: '中可信', verifiedCount: 0 };
+  let level: VerificationLevel = '低可信';
+  let verifiedCount = 0;
   for (const meal of meals) {
     const candidate = verificationLevelForMethod(meal.method);
     if (RANK[candidate] > RANK[level]) level = candidate;
+    if (candidate !== '低可信') verifiedCount += 1;
   }
-  return { level, verifiedCount: meals.length };
+  return { level, verifiedCount };
 }

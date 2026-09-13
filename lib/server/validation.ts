@@ -338,3 +338,28 @@ export const candidateCommitRequestSchema = z
 export type CandidateCommitRequest = z.infer<
   typeof candidateCommitRequestSchema
 >;
+
+export const regionCreateSchema = z
+  .object({
+    id: z.string().trim().min(1).max(80).optional(),
+    parentId: z.string().trim().max(80).default(''),
+    name: plainText(60),
+    level: z.enum(['city', 'district', 'business_area']),
+    centerLng: z.number().finite(),
+    centerLat: z.number().finite(),
+    bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+    zoom: z.number().int().min(1).max(20).default(12),
+    sortOrder: z.number().int().min(0).max(9999).default(0),
+  })
+  .strict();
+export const regionPatchSchema = z
+  .object({
+    name: plainText(60).optional(),
+    centerLng: z.number().finite().optional(),
+    centerLat: z.number().finite().optional(),
+    bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]).optional(),
+    zoom: z.number().int().min(1).max(20).optional(),
+    sortOrder: z.number().int().min(0).max(9999).optional(),
+    active: z.boolean().optional(),
+  })
+  .strict();

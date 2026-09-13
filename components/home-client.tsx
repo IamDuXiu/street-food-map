@@ -42,6 +42,7 @@ type MobileListState = 'peek' | 'half' | 'full';
 export function HomeClient() {
   const [maxPrice, setMaxPrice] = useState(20);
   const [regionId, setRegionId] = useState(DEFAULT_REGION);
+  const [cityId, setCityId] = useState(DEFAULT_REGION);
   const [tag, setTag] = useState('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortMode>('price');
@@ -64,7 +65,7 @@ export function HomeClient() {
       .find((region) => region.id === regionId) ?? findShenzhenRegion(regionId) ?? catalog.city
   ), [catalog, regionId]);
   const viewport = useMemo(
-    () => regionId === 'nearby' ? nearbyViewport(origin) : selectedRegion ?? catalog.city,
+    () => regionId === 'nearby' ? nearbyViewport(origin, catalog.city) : selectedRegion ?? catalog.city,
     [catalog.city, origin, regionId, selectedRegion],
   );
   const requestBbox = movedBbox ?? (regionId === 'nearby' ? catalog.city.bbox : viewport.bbox);
@@ -85,12 +86,14 @@ export function HomeClient() {
         const saved = JSON.parse(raw) as Partial<{
           maxPrice: number;
           regionId: string;
+          cityId: string;
           tag: string;
           query: string;
           sort: SortMode;
           selectedId: string | null;
         }>;
         if ([15, 20, 25].includes(saved.maxPrice ?? 0)) setMaxPrice(saved.maxPrice!);
+        if (saved.cityId) setCityId(saved.cityId);
         if (saved.regionId && saved.regionId !== 'nearby') setRegionId(saved.regionId);
         if (saved.tag) setTag(saved.tag);
         if (typeof saved.query === 'string') setQuery(saved.query);
@@ -112,7 +115,8 @@ export function HomeClient() {
     try {
       window.sessionStorage.setItem('meal-map-home-state', JSON.stringify({
         maxPrice,
-        regionId: regionId === 'nearby' ? 'shenzhen' : regionId,
+        cityId,
+        regionId: regionId === 'nearby' ? cityId : regionId,
         tag,
         query,
         sort: sort === 'distance' ? 'price' : sort,
@@ -121,20 +125,20 @@ export function HomeClient() {
     } catch {
       // Private browsing or a disabled storage policy should not block browsing.
     }
-  }, [maxPrice, regionId, tag, query, sort, selectedId]);
+  }, [maxPrice, cityId, regionId, tag, query, sort, selectedId]);
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/v1/config')
+    fetch(`/api/v1/config?city=${encodeURIComponent(cityId)}`)
       .then((response) => response.ok ? response.json() as Promise<{ data?: { regions?: ShenzhenRegionCatalog; tags?: string[] } }> : Promise.reject(new Error('CONFIG_FAILED')))
       .then((payload) => {
         if (cancelled) return;
-        if (payload.data?.regions?.districts?.length) setCatalog(payload.data.regions);
+        if (payload.data?.regions) setCatalog(payload.data.regions);
         if (payload.data?.tags?.length) setAvailableTags(payload.data.tags);
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
-  }, []);
+  }, [cityId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -184,6 +188,17 @@ export function HomeClient() {
     setLocationMessage(region.coverage === 'planned' ? `${region.label}已开放浏览，真实饭签等待共建。` : `已切换到${region.label}。`);
   }
 
+  function chooseCity(nextCityId: string, label: string) {
+    if (nextCityId === cityId) return;
+    setCityId(nextCityId);
+    setRegionId(nextCityId);
+    setOrigin(undefined);
+    setMovedBbox(undefined);
+    setSelectedId(null);
+    if (sort === 'distance') setSort('price');
+    setLocationMessage(`已切换到${label}。`);
+  }
+
   function locateNearby() {
     setMovedBbox(undefined);
     if (!navigator.geolocation) {
@@ -221,7 +236,7 @@ export function HomeClient() {
   if (maxPrice !== 25) activeChips.push({ key: 'price', label: `预算 ≤ ¥${maxPrice}`, onRemove: () => setMaxPrice(25) });
   if (tag !== 'all') activeChips.push({ key: 'tag', label: `标签 · ${tag}`, onRemove: () => setTag('all') });
   if (query.trim()) activeChips.push({ key: 'query', label: `关键词 · ${query.trim()}`, onRemove: () => setQuery('') });
-  if (regionId !== 'shenzhen') activeChips.push({ key: 'region', label: `区域 · ${regionId === 'nearby' ? '我的附近' : (selectedRegion?.label ?? regionId)}`, onRemove: () => { setRegionId('shenzhen'); setOrigin(undefined); setMovedBbox(undefined); setSelectedId(null); if (sort === 'distance') setSort('price'); } });
+  if (regionId !== cityId) activeChips.push({ key: 'region', label: `区域 · ${regionId === 'nearby' ? '我的附近' : (selectedRegion?.label ?? regionId)}`, onRemove: () => { setRegionId(cityId); setOrigin(undefined); setMovedBbox(undefined); setSelectedId(null); if (sort === 'distance') setSort('price'); } });
 
   return (
     <main className={`${styles.homeShell} home-shell`}>
@@ -231,7 +246,7 @@ export function HomeClient() {
             <span aria-hidden="true">⌕</span>
             <input aria-label="搜店名或餐食" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜店名或餐食" />
           </label>
-          <RegionPicker catalog={catalog} selectedRegion={selectedRegion} onSelect={chooseRegion} onLocate={locateNearby} />
+          <RegionPicker catalog={catalog} selectedRegion={selectedRegion} onSelect={chooseRegion} onLocate={locateNearby} onSelectCity={chooseCity} />
           <button type="button" className={styles.resetButton} onClick={resetFilters}>重置</button>
         </div>
         <div className={styles.filterRow}>

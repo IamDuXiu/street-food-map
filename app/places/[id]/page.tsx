@@ -83,6 +83,9 @@ export default async function PlacePage({
               <div>
                 <span className="eyebrow">这里最便宜的一份</span>
                 <strong>{formatPrice(cheapest.priceFen)}</strong>
+                {cheapest.unverified && (
+                  <span className="unverified-tag">未核验 · 创作者来源</span>
+                )}
               </div>
               <span className="price-callout-meal">
                 {cheapest.name}
@@ -111,11 +114,22 @@ export default async function PlacePage({
                     </small>
                   </div>
                   <div className="meal-proof">
-                    <TrustBadge label={meal.freshness} compact />
-                    <small>
-                      核验于 {meal.observedAt.replaceAll('-', '.')} ·{' '}
-                      {verificationMethodLabel(meal.method)}
-                    </small>
+                    {meal.unverified ? (
+                      <>
+                        <span className="unverified-tag">未核验</span>
+                        <small>
+                          创作者内容 · 来源 {meal.source ?? place.sources ?? '创作者'}
+                        </small>
+                      </>
+                    ) : (
+                      <>
+                        <TrustBadge label={meal.freshness} compact />
+                        <small>
+                          核验于 {meal.observedAt.replaceAll('-', '.')} ·{' '}
+                          {verificationMethodLabel(meal.method)}
+                        </small>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -163,6 +177,17 @@ export default async function PlacePage({
                 ))}
               </div>
             </div>
+            {place.sources && (
+              <div className="aside-block">
+                <span className="eyebrow">内容来源</span>
+                <div className="source-cloud">
+                  {place.sources.split(';').map((source) => (
+                    <span key={source}>{source}</span>
+                  ))}
+                </div>
+                <p>创作者内容，未经独立核验；价格以最新一条为准。</p>
+              </div>
+            )}
             <a
               className="primary-button navigation-button"
               href={`https://apis.map.qq.com/uri/v1/marker?marker=coord:${place.lat},${place.lng};title:${encodeURIComponent(place.name)};addr:${encodeURIComponent(place.address)}&referer=shenzhen-budget-map`}

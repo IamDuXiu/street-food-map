@@ -5,6 +5,7 @@ import type { Place } from '../types';
 import { distanceMeters } from '../geo';
 import { ageInDays, freshness, freshnessLabel } from '../freshness';
 import { placeTrust } from '../trust';
+import { loadPlaceSourceView } from './sources';
 
 export interface DbPlace extends Place {
   zoneName: string;
@@ -34,7 +35,7 @@ export class PlaceRepository {
   ): DbPlace[] {
     const rows = this.db
       .prepare(
-        `SELECT p.*, z.name zone_name, (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND date(pr.observed_at) >= date('now','-180 day')) minimum_price FROM places p JOIN pilot_zones z ON z.id=p.zone_id WHERE p.record_status='active' AND p.business_status IN ('open','unknown') AND (? IS NULL OR p.zone_id=?) AND (? IS NULL OR p.name LIKE '%'||?||'%' OR EXISTS (SELECT 1 FROM menu_items mi WHERE mi.place_id=p.id AND mi.name LIKE '%'||?||'%')) AND (? IS NULL OR minimum_price <= ?) ORDER BY p.name`,
+        `SELECT p.*, z.name zone_name, (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND ((pr.status='verified' AND pr.verification_method <> 'external_lead') OR pr.verification_method='external_lead') AND date(pr.observed_at) >= date('now','-180 day')) minimum_price FROM places p JOIN pilot_zones z ON z.id=p.zone_id WHERE p.record_status='active' AND p.business_status IN ('open','unknown') AND (? IS NULL OR p.zone_id=?) AND (? IS NULL OR p.name LIKE '%'||?||'%' OR EXISTS (SELECT 1 FROM menu_items mi WHERE mi.place_id=p.id AND mi.name LIKE '%'||?||'%')) AND (? IS NULL OR minimum_price <= ?) ORDER BY p.name`,
       )
       .all(
         filters.zoneId ?? null,
@@ -65,8 +66,8 @@ export class PlaceRepository {
       "p.record_status='active'",
       "p.business_status IN ('open','unknown')",
       'z.active=1',
-      "EXISTS (SELECT 1 FROM menu_items em JOIN price_reports ep ON ep.menu_item_id=em.id WHERE em.place_id=p.id AND em.active=1 AND ep.status='verified' AND ep.verification_method <> 'external_lead' AND ep.price_fen<=2500 AND date(ep.observed_at)>=date(?))",
-      "EXISTS (SELECT 1 FROM menu_items fm JOIN price_reports fp ON fp.menu_item_id=fm.id WHERE fm.place_id=p.id AND fm.active=1 AND fp.status='verified' AND fp.verification_method <> 'external_lead' AND fp.price_fen<=? AND fp.price_fen<=2500 AND date(fp.observed_at)>=date(?))",
+      "EXISTS (SELECT 1 FROM menu_items em JOIN price_reports ep ON ep.menu_item_id=em.id WHERE em.place_id=p.id AND em.active=1 AND ((ep.status='verified' AND ep.verification_method <> 'external_lead') OR ep.verification_method='external_lead') AND ep.price_fen<=2500 AND date(ep.observed_at)>=date(?))",
+      "EXISTS (SELECT 1 FROM menu_items fm JOIN price_reports fp ON fp.menu_item_id=fm.id WHERE fm.place_id=p.id AND fm.active=1 AND ((fp.status='verified' AND fp.verification_method <> 'external_lead') OR fp.verification_method='external_lead') AND fp.price_fen<=? AND fp.price_fen<=2500 AND date(fp.observed_at)>=date(?))",
     ];
     const values: unknown[] = [cutoff, maxPrice, cutoff];
     if (filters.zoneId) {
@@ -97,8 +98,8 @@ export class PlaceRepository {
     const rows = this.db
       .prepare(
         `SELECT p.*, z.name zone_name,
-      (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=? AND pr.price_fen<=2500 AND date(pr.observed_at)>=date(?)) minimum_price_fen,
-      (SELECT MAX(pr.observed_at) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND date(pr.observed_at)>=date(?)) freshest_observed_at
+      (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND ((pr.status='verified' AND pr.verification_method <> 'external_lead') OR pr.verification_method='external_lead') AND pr.price_fen<=? AND pr.price_fen<=2500 AND date(pr.observed_at)>=date(?)) minimum_price_fen,
+      COALESCE((SELECT MAX(pr.observed_at) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND date(pr.observed_at)>=date(?)), '') freshest_observed_at
       FROM places p JOIN pilot_zones z ON z.id=p.zone_id WHERE ${clauses.join(' AND ')} ORDER BY p.id`,
       )
       .all(maxPrice, cutoff, cutoff, ...values) as Array<
@@ -305,26 +306,61 @@ export class PlaceRepository {
       width: number | null;
       height: number | null;
     }>;
+    const sourceView = loadPlaceSourceView(this.db, String(row.id));
+    const creatorPrices = this.db
+      .prepare(
+        `SELECT pr.menu_item_id, pr.price_fen, pr.observed_at
+         FROM price_reports pr JOIN menu_items mi ON mi.id=pr.menu_item_id
+         WHERE mi.place_id=? AND mi.active=1
+           AND pr.verification_method='external_lead' AND pr.price_fen<=2500
+         ORDER BY pr.observed_at DESC, pr.created_at DESC`,
+      )
+      .all(row.id) as Array<{
+      menu_item_id: string;
+      price_fen: number;
+      observed_at: string;
+    }>;
+    const creatorPriceByMenu = new Map<
+      string,
+      { priceFen: number; observedAt: string }
+    >();
+    for (const price of creatorPrices) {
+      if (!creatorPriceByMenu.has(price.menu_item_id))
+        creatorPriceByMenu.set(price.menu_item_id, {
+          priceFen: Number(price.price_fen),
+          observedAt: String(price.observed_at),
+        });
+    }
     const mappedMeals = meals
-      .filter((meal) => meal.price_fen !== null)
       .map((meal) => {
-        const observedAt = String(meal.observed_at);
-        const priceFen = Number(meal.price_fen);
+        const menuItemId = String(meal.id);
+        const verified = meal.price_fen !== null && meal.price_fen !== undefined;
+        const creator = creatorPriceByMenu.get(menuItemId);
+        if (!verified && !creator) return null;
+        const observedAt = verified
+          ? String(meal.observed_at)
+          : creator!.observedAt;
+        const priceFen = verified ? Number(meal.price_fen) : creator!.priceFen;
         const previous =
-          meal.prev_price_fen !== null && meal.prev_price_fen !== undefined
+          verified &&
+          meal.prev_price_fen !== null &&
+          meal.prev_price_fen !== undefined
             ? Number(meal.prev_price_fen)
             : undefined;
         const delta = previous !== undefined ? priceFen - previous : 0;
+        const mealSource = sourceView.byMenuItem[menuItemId];
         return {
-          id: String(meal.id),
+          id: menuItemId,
           name: String(meal.name),
           priceFen,
           category: String(meal.category),
           description: String(meal.description ?? ''),
           observedAt,
-          method: String(meal.verification_method),
+          method: verified ? String(meal.verification_method) : 'external_lead',
           freshness: freshnessLabel(freshness(observedAt)),
           ageDays: ageInDays(observedAt),
+          ...(verified ? {} : { unverified: true as const }),
+          ...(mealSource ? { source: mealSource } : {}),
           ...(previous !== undefined && delta !== 0
             ? {
                 previousPriceFen: previous,
@@ -335,7 +371,8 @@ export class PlaceRepository {
               }
             : {}),
         };
-      });
+      })
+      .filter((meal) => meal !== null);
     return {
       id: String(row.id),
       zoneId: String(row.zone_id) as Place['zoneId'],
@@ -357,6 +394,7 @@ export class PlaceRepository {
       businessStatus: String(row.business_status),
       verification: placeTrust(mappedMeals).level,
       evidence,
+      ...(sourceView.placeLabels ? { sources: sourceView.placeLabels } : {}),
       meals: mappedMeals,
     };
   }

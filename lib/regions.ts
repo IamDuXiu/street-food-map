@@ -14,9 +14,19 @@ export interface ShenzhenDistrict extends ShenzhenRegion {
   businessAreas: ShenzhenRegion[];
 }
 
+export interface RegionCityOption {
+  id: string;
+  label: string;
+  centerLng: number;
+  centerLat: number;
+  bbox: [number, number, number, number];
+  zoom: number;
+}
+
 export interface ShenzhenRegionCatalog {
   city: ShenzhenRegion;
   districts: ShenzhenDistrict[];
+  cities?: RegionCityOption[];
 }
 
 const area = (
