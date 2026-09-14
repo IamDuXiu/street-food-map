@@ -63,7 +63,7 @@ export function CoordinatePicker({
       }
     }).catch(() => {
       if (!cancelled) {
-        setMapError('腾讯底图暂时不可用，已切换为无需密钥的示意底图。');
+        setMapError('底图暂时不可用，已切换为示意底图。');
         setMode('demo');
       }
       adapter.destroy();
@@ -159,7 +159,7 @@ export function CoordinatePicker({
           }}
           onPointerCancel={() => setDragging(false)}
         ><span>⌖</span></button>}
-        <span className="coordinate-map-mode">{mode === 'tencent' ? 'TENCENT / 实时底图' : '示意底图 / 无需密钥'}</span>
+        <span className="coordinate-map-mode">{mode === 'tencent' ? '腾讯地图' : '示意底图'}</span>
       </div>
       <div className="coordinate-fields">
         <label>经度

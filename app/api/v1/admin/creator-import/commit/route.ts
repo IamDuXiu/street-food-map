@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       {
         error: {
           code: error instanceof AuthError ? error.code : 'IMPORT_FAILED',
-          message: '导入未写入，数据库已回滚',
+          message: '导入未写入，数据已回滚',
         },
       },
       { status },

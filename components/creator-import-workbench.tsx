@@ -173,7 +173,7 @@ export function CreatorImportWorkbench() {
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok)
-        throw new Error(body.error?.message || '导入失败，数据库未改变');
+        throw new Error(body.error?.message || '导入失败，数据未改变');
       setNotice({
         tone: 'success',
         message: `已导入 ${body.data?.imported ?? 0} 条（新建门店 ${body.data?.created ?? 0} 个）`,
@@ -184,7 +184,7 @@ export function CreatorImportWorkbench() {
     } catch (error) {
       setNotice({
         tone: 'error',
-        message: error instanceof Error ? error.message : '导入失败，数据库未改变',
+        message: error instanceof Error ? error.message : '导入失败，数据未改变',
       });
     } finally {
       setBusy(false);

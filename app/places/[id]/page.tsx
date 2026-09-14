@@ -159,7 +159,6 @@ export default async function PlacePage({
             <div className="aside-block">
               <span className="eyebrow">准入方式</span>
               <strong>{place.access}</strong>
-              <p>去之前看一眼，别让门卫和你都为难。</p>
             </div>
             <div className="aside-block">
               <span className="eyebrow">客观标签</span>

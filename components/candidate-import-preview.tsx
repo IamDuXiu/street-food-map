@@ -89,13 +89,13 @@ export function CandidateImportPreview({ draftId }: { draftId: string }) {
       const token = await csrfToken();
       const response = await fetch('/api/v1/admin/leads/commit', { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': token }, body: JSON.stringify({ draftId: draft.id, version: preview.version }) });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok || !body.data) throw new Error(body.error?.message || '候选提交失败，数据库未改变');
+      if (!response.ok || !body.data) throw new Error(body.error?.message || '候选提交失败，数据未改变');
       if (typeof window !== 'undefined' && window.localStorage.getItem('candidatePoolDraftId') === draft.id)
         window.localStorage.removeItem('candidatePoolDraftId');
       setMessage(`已提交 ${preview.selectedCount} 份餐食，新增 ${body.data.createdPlaceIds?.length ?? 0} 家地点`);
       setPreview(null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '候选提交失败，数据库未改变');
+      setError(reason instanceof Error ? reason.message : '候选提交失败，数据未改变');
     } finally {
       setBusy(false);
     }

@@ -35,7 +35,7 @@ export function MapStage({ places, viewport, selectedId, onSelect, onSearchViewp
 
   useEffect(() => {
     if (!TencentAdapter.isConfigured() || !canvasRef.current) {
-      setMapError('地图尚未配置，可先浏览餐食列表。当前为示意底图，不可用于导航。');
+      setMapError('当前为示意底图，不可用于导航。');
       setMapLoading(false);
       setMapCanRetry(false);
       return;
@@ -53,7 +53,7 @@ export function MapStage({ places, viewport, selectedId, onSelect, onSearchViewp
     }).catch(() => {
       if (!cancelled && adapterRef.current === adapter) {
         setMapLoading(false);
-        setMapError('腾讯地图暂时无法加载，可先浏览餐食列表。当前为示意底图，不可用于导航。');
+        setMapError('地图暂时无法加载，当前为示意底图，不可用于导航。');
         setMode('demo');
       }
       adapter.destroy();

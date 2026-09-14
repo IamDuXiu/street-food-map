@@ -57,13 +57,13 @@ export function ImportWorkbench() {
       if (!tokenResponse.ok || !tokenBody.csrfToken) throw new Error('无法取得安全令牌，请刷新页面重试');
       const response = await fetch('/api/v1/admin/imports/commit', { method: 'POST', headers: { 'content-type': 'application/json', 'x-csrf-token': tokenBody.csrfToken }, body: JSON.stringify({ rows }) });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error?.message || '导入失败，数据库未改变');
+      if (!response.ok) throw new Error(body.error?.message || '导入失败，数据未改变');
       setMessage(`已原子导入 ${rows.length} 行`);
       setTone('success');
       setValid(false);
     } catch (error) {
       setTone('error');
-      setMessage(error instanceof Error ? error.message : '导入失败，数据库未改变');
+      setMessage(error instanceof Error ? error.message : '导入失败，数据未改变');
     } finally {
       setBusy(false);
     }

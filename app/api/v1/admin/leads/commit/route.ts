@@ -33,7 +33,7 @@ function errorResponse(error: unknown) {
     {
       error: {
         code: 'CANDIDATE_COMMIT_FAILED',
-        message: '导入未写入，数据库已回滚',
+        message: '导入未写入，数据已回滚',
       },
     },
     { status: 400 },

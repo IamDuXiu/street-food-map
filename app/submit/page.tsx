@@ -245,7 +245,7 @@ export default function SubmitPage() {
           <div className="success-code">
             <span>查询码（只显示一次）</span>
             <strong>{submitted.code}</strong>
-            <small>不要把查询码当作图片上传令牌；可用它查询审核状态。</small>
+            <small>查询码只用于查询审核状态，不能用于上传图片。</small>
           </div>
           <div className="public-actions">
             <Link
@@ -284,7 +284,7 @@ export default function SubmitPage() {
             hidden
           />
           <fieldset>
-            <legend>01 · 你想告诉我们什么？</legend>
+            <legend>01 · 投稿类型</legend>
             <div className="choice-grid">
               {(Object.keys(labels) as SubmissionType[]).map((item) => (
                 <label key={item}>
@@ -301,7 +301,7 @@ export default function SubmitPage() {
           </fieldset>
           {type === 'new_place' && (
             <fieldset>
-              <legend>02 · 新饭点在哪里？</legend>
+              <legend>02 · 地点</legend>
               <label>
                 地点名称
                 <input
@@ -353,7 +353,7 @@ export default function SubmitPage() {
           )}
           {type !== 'new_place' && (
             <fieldset>
-              <legend>02 · 选择地点</legend>
+              <legend>02 · 地点</legend>
               <label>
                 地点
                 <Select
@@ -393,7 +393,7 @@ export default function SubmitPage() {
             </fieldset>
           )}
           <fieldset>
-            <legend>03 · 具体情况</legend>
+            <legend>03 · 详情</legend>
             {type === 'correction' && (
               <>
                 <label>

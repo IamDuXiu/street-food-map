@@ -68,13 +68,13 @@ def ensure_public_fixture(page: Page, route: str) -> None:
 
 def ensure_admin_fixture(page: Page, route: str) -> None:
     headings = {
-        "/admin": re.compile(r"今天，后台有 \d+ 件事要处理。"),
+        "/admin": "总览",
         "/admin/leads": "候选池",
         "/admin/submissions": "投稿审核队列",
         "/admin/places": "地点与餐食",
         "/admin/import": "导入一批饭签",
         "/admin/exports": "导出与备份",
-        "/admin/audit-log": "每一步都有记录",
+        "/admin/audit-log": "审计记录",
     }
     expect(page.get_by_role("heading", name=headings[route])).to_be_visible()
 
