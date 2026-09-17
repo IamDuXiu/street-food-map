@@ -20,6 +20,7 @@ export function toPublicPlace(
     id: place.id,
     zoneId: place.zoneId,
     zoneName: place.zoneName,
+    ...(place.city ? { city: place.city } : {}),
     name: place.name,
     address: place.address,
     lng: place.lng,

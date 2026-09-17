@@ -19,12 +19,17 @@ function parse(
   request: NextRequest,
   allowedZoneIds: string[],
   allowedTags: string[],
+  allowedCityIds: string[],
 ): PublicMapFilters | Response {
   const params = request.nextUrl.searchParams;
   const q = params.get('q')?.trim() || undefined;
   if (q && q.length > 100) return bad('关键词过长');
   const zoneId = params.get('zoneId') || undefined;
   if (zoneId && !allowedZoneIds.includes(zoneId)) return bad('片区不存在');
+  const city = params.get('city')?.trim() || undefined;
+  if (city && city.length > 40) return bad('城市无效');
+  if (city && allowedCityIds.length && !allowedCityIds.includes(city))
+    return bad('城市不存在');
   const maxRaw = params.get('maxPriceFen');
   const maxPriceFen = maxRaw === null ? undefined : Number(maxRaw);
   if (
@@ -65,6 +70,7 @@ function parse(
   return {
     q,
     zoneId,
+    city,
     maxPriceFen,
     sort: sort ?? undefined,
     tags: [...new Set(tags)],
@@ -92,11 +98,18 @@ export async function GET(request: NextRequest) {
         db.prepare('SELECT name FROM tags').all() as Array<{ name: string }>
       ).map((row) => row.name)
     : [];
+  const databaseCityIds = db
+    ? (
+        db
+          .prepare("SELECT id FROM regions WHERE level='city' AND active=1")
+          .all() as Array<{ id: string }>
+      ).map((row) => row.id)
+    : [];
   const allowedZoneIds = databaseZoneIds.length
     ? databaseZoneIds
     : VIEWPORTS.map((zone) => zone.id);
   const allowedTags = databaseTags.length ? databaseTags : TAGS;
-  const parsed = parse(request, allowedZoneIds, allowedTags);
+  const parsed = parse(request, allowedZoneIds, allowedTags, databaseCityIds);
   if (parsed instanceof Response) return parsed;
   const now = new Date();
   try {

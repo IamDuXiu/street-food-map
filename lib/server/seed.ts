@@ -5,17 +5,17 @@ import type { SqliteDatabase } from './db';
 export function seedDemo(db: SqliteDatabase) {
   const now = new Date().toISOString();
   const transaction = db.transaction(() => {
-    const zone = db.prepare('INSERT OR IGNORE INTO pilot_zones(id,name,audience,center_lng,center_lat,active) VALUES (?,?,?,?,?,1)');
-    zone.run(VIEWPORTS[0].id, VIEWPORTS[0].label, 'student', 113.933073, 22.526639);
-    zone.run(VIEWPORTS[1].id, VIEWPORTS[1].label, 'office_worker', 113.945, 22.54);
+    const zone = db.prepare('INSERT OR IGNORE INTO pilot_zones(id,name,audience,center_lng,center_lat,city,active) VALUES (?,?,?,?,?,?,1)');
+    zone.run(VIEWPORTS[0].id, VIEWPORTS[0].label, 'student', 113.933073, 22.526639, 'shenzhen');
+    zone.run(VIEWPORTS[1].id, VIEWPORTS[1].label, 'office_worker', 113.945, 22.54, 'shenzhen');
     const tag = db.prepare('INSERT OR IGNORE INTO tags(id,name) VALUES (?,?)');
     TAGS.forEach((name) => tag.run(name, name));
-    const place = db.prepare('INSERT OR IGNORE INTO places(id,zone_id,name,normalized_name,address,lng,lat,category,access_type,access_note,business_status,record_status,opening_hours_note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    const place = db.prepare('INSERT OR IGNORE INTO places(id,zone_id,city,name,normalized_name,address,lng,lat,category,access_type,access_note,business_status,record_status,opening_hours_note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     const menu = db.prepare('INSERT OR IGNORE INTO menu_items(id,place_id,name,normalized_name,category,description,active,created_at,updated_at) VALUES (?,?,?,?,?,?,1,?,?)');
     const price = db.prepare('INSERT OR IGNORE INTO price_reports(id,menu_item_id,price_fen,observed_at,verification_method,status,reviewed_at,created_at) VALUES (?,?,?,?,?,?,?,?)');
     const placeTag = db.prepare('INSERT OR IGNORE INTO place_tags(place_id,tag_id) VALUES (?,?)');
     for (const item of PLACES) {
-      place.run(item.id, item.zoneId, item.name, normalize(item.name), item.address, item.lng, item.lat, item.category, item.access.includes('公开') ? 'public' : 'identity_restricted', item.access, 'open', 'active', item.note, now, now);
+      place.run(item.id, item.zoneId, 'shenzhen', item.name, normalize(item.name), item.address, item.lng, item.lat, item.category, item.access.includes('公开') ? 'public' : 'identity_restricted', item.access, 'open', 'active', item.note, now, now);
       item.tags.forEach((name) => placeTag.run(item.id, name));
       for (const meal of item.meals) {
         menu.run(meal.id, item.id, meal.name, normalize(meal.name), meal.category, meal.description, now, now);

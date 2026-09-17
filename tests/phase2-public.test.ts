@@ -48,8 +48,7 @@ describe('阶段 2 公开查询与坐标', () => {
     expect(JSON.stringify(all)).not.toMatch(/sourceUrl|adminNote|payload_json|audit/);
   });
 
-  it('公开查询排除停业/过期地点，非法 bbox、片区和标签统一返回 400', async () => {
-    const db = database();
+  it('公开查询排除停业/过期地点，非法 bbox、片区和标签统一返回 400', async () => {    const db = database();
     db.prepare("UPDATE places SET business_status='closed' WHERE id='shenda-west-noodle'").run();
     db.prepare("UPDATE price_reports SET observed_at='2020-01-01' WHERE menu_item_id IN ('shenda-lunch','shenda-noodle')").run();
     const visible = new PlaceRepository(db).listPublic({ zoneId: 'sz university', now: new Date('2026-09-02T00:00:00Z') });
@@ -59,5 +58,31 @@ describe('阶段 2 公开查询与坐标', () => {
       const response = await mapGet(new NextRequest(`http://localhost/api/v1/map?${query}`));
       expect(response.status).toBe(400);
     }
+  });
+
+  it('按城市归属过滤，避免相邻城市重叠 bbox 串点', () => {
+    const db = database();
+    const now = new Date().toISOString();
+    db.prepare("INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,city,active) VALUES ('city-gz','广州测试','office_worker',113.3,23.1,'guangzhou',1)").run();
+    db.prepare("INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,city,active) VALUES ('city-fs','佛山测试','office_worker',113.12,23.03,'foshan',1)").run();
+    const addPlace = db.prepare('INSERT INTO places(id,zone_id,city,name,normalized_name,address,lng,lat,category,access_type,business_status,record_status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    addPlace.run('gz-place', 'city-gz', 'guangzhou', '广州测试店', '广州测试店', '广州', 113.3, 23.1, '街边快餐', 'public', 'open', 'active', now, now);
+    addPlace.run('fs-place', 'city-fs', 'foshan', '佛山测试店', '佛山测试店', '佛山', 113.12, 23.03, '街边快餐', 'public', 'open', 'active', now, now);
+    const addMenu = db.prepare('INSERT INTO menu_items(id,place_id,name,normalized_name,category,active,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)');
+    const addPrice = db.prepare('INSERT INTO price_reports(id,menu_item_id,price_fen,observed_at,verification_method,status,created_at) VALUES (?,?,?,?,?,?,?)');
+    for (const mealId of ['gz-meal', 'fs-meal']) {
+      addMenu.run(mealId, mealId === 'gz-meal' ? 'gz-place' : 'fs-place', '测试餐', `测试餐-${mealId}`, '套餐', 1, now, now);
+      addPrice.run(`${mealId}-price`, mealId, 1500, now.slice(0, 10), 'onsite_menu', 'verified', now);
+    }
+    const repo = new PlaceRepository(db);
+    // Guangzhou's approximate bbox also covers the Foshan point, but the
+    // explicit city attribution keeps the Foshan place out of the Guangzhou view.
+    const bbox: [number, number, number, number] = [112.95, 22.4, 113.74, 23.95];
+    const gz = repo.listPublic({ bbox, city: 'guangzhou', now: new Date() });
+    expect(gz.map((place) => place.id)).toContain('gz-place');
+    expect(gz.map((place) => place.id)).not.toContain('fs-place');
+    const foshan = repo.listPublic({ bbox, city: 'foshan', now: new Date() });
+    expect(foshan.map((place) => place.id)).toContain('fs-place');
+    expect(foshan.map((place) => place.id)).not.toContain('gz-place');
   });
 });

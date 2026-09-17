@@ -5,23 +5,23 @@ async function seedCandidate(page: import('@playwright/test').Page, suffix: stri
   const records = [
     {
       candidate_id: `UI-${suffix}-1`,
-      store_name: `候选池测试店 ${suffix}`,
+      store_name: `线索池测试店 ${suffix}`,
       meal_name: '现场套餐',
       displayed_price_yuan: 18,
       source_url: sourceUrl,
       address_or_area: '南山区学府路 100 号',
       suggested_import_zone: '深大粤海',
-      evidence_summary: '候选池端到端测试线索',
+      evidence_summary: '线索池端到端测试线索',
     },
     {
       candidate_id: `UI-${suffix}-2`,
-      store_name: `候选池测试店 ${suffix}`,
+      store_name: `线索池测试店 ${suffix}`,
       meal_name: '现场粉面',
       displayed_price_yuan: 20,
       source_url: sourceUrl,
       address_or_area: '南山区学府路 100 号',
       suggested_import_zone: '深大粤海',
-      evidence_summary: '候选池端到端测试线索',
+      evidence_summary: '线索池端到端测试线索',
     },
   ];
   const result = await page.evaluate(async (payload) => {
@@ -43,14 +43,14 @@ async function login(page: import('@playwright/test').Page) {
   await expect(page).toHaveURL(/\/admin$/);
 }
 
-test('候选池支持按店勾选、必填拦截、demo 落点并生成带版本的预览', async ({ page }) => {
+test('线索池支持按店勾选、必填拦截、demo 落点并生成带版本的预览', async ({ page }) => {
   const suffix = `${Date.now()}`;
   await login(page);
   await seedCandidate(page, suffix);
   await page.goto('/admin/leads');
   await page.waitForSelector('.candidate-workspace');
 
-  const row = page.locator('.candidate-store-row').filter({ hasText: `候选池测试店 ${suffix}` });
+  const row = page.locator('.candidate-store-row').filter({ hasText: `线索池测试店 ${suffix}` });
   await expect(row).toHaveCount(1);
   await row.locator('input[aria-label*="全部餐食"]').check();
   await row.locator('.candidate-meal-row input').first().uncheck();
@@ -88,13 +88,13 @@ test('候选池支持按店勾选、必填拦截、demo 落点并生成带版本
   await expect(page.locator(`[role="option"][data-value="${draftParam}"]`)).toHaveCount(0);
 });
 
-test('候选池草稿刷新可恢复且手机无横向溢出', async ({ page }) => {
+test('线索池草稿刷新可恢复且手机无横向溢出', async ({ page }) => {
   const suffix = `${Date.now()}`;
   await login(page);
   await seedCandidate(page, suffix);
   await page.goto('/admin/leads');
   await page.waitForSelector('.candidate-workspace');
-  const row = page.locator('.candidate-store-row').filter({ hasText: `候选池测试店 ${suffix}` });
+  const row = page.locator('.candidate-store-row').filter({ hasText: `线索池测试店 ${suffix}` });
   await row.locator('.candidate-meal-row input').first().check();
   await page.getByRole('button', { name: '保存草稿' }).click();
   await expect(page.getByRole('status').filter({ hasText: '草稿已保存' })).toBeVisible();

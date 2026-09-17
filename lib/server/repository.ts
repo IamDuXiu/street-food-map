@@ -19,6 +19,7 @@ export interface DbPlace extends Place {
 export interface PublicMapFilters {
   q?: string;
   zoneId?: string;
+  city?: string;
   maxPriceFen?: number;
   bbox?: [number, number, number, number];
   tags?: string[];
@@ -73,6 +74,13 @@ export class PlaceRepository {
     if (filters.zoneId) {
       clauses.push('p.zone_id=?');
       values.push(filters.zoneId);
+    }
+    if (filters.city) {
+      // Legacy rows without an explicit city stay visible (backward
+      // compatible); rows attributed to another city are excluded so an
+      // overlapping neighbouring-city bbox cannot leak them into this view.
+      clauses.push('(p.city IS NULL OR p.city=?)');
+      values.push(filters.city);
     }
     if (filters.q?.trim()) {
       clauses.push(
@@ -204,12 +212,14 @@ export class PlaceRepository {
   ): string {
     const id = newId('place');
     const now = new Date().toISOString();
+    const city = input.city ?? this.zoneCity(input.zoneId);
     const run = this.db.prepare(
-      'INSERT INTO places(id,zone_id,name,normalized_name,address,lng,lat,category,access_type,access_note,business_status,record_status,opening_hours_note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'INSERT INTO places(id,zone_id,city,name,normalized_name,address,lng,lat,category,access_type,access_note,business_status,record_status,opening_hours_note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     );
     run.run(
       id,
       input.zoneId,
+      city,
       input.name,
       normalize(input.name),
       input.address,
@@ -284,6 +294,13 @@ export class PlaceRepository {
       join.run(placeId, tag);
     });
   }
+  private zoneCity(zoneId: string): string | null {
+    const row = this.db
+      .prepare('SELECT city FROM pilot_zones WHERE id=?')
+      .get(zoneId) as { city: string | null } | undefined;
+    return row?.city ?? null;
+  }
+
   private toPlace(row: Record<string, unknown>): DbPlace {
     const meals = this.db
       .prepare(
@@ -377,6 +394,7 @@ export class PlaceRepository {
       id: String(row.id),
       zoneId: String(row.zone_id) as Place['zoneId'],
       zoneName: String(row.zone_name),
+      ...(row.city ? { city: String(row.city) } : {}),
       name: String(row.name),
       address: String(row.address),
       lng: Number(row.lng),

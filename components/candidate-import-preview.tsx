@@ -102,7 +102,7 @@ export function CandidateImportPreview({ draftId }: { draftId: string }) {
   }
 
   if (loading) return <section className="candidate-import-panel" aria-label="候选导入预览"><p className="candidate-loading">正在生成候选导入预览……</p></section>;
-  if (error && !preview) return <section className="candidate-import-panel candidate-import-error" aria-label="候选导入预览" role="alert"><p>{error}</p><Link className="secondary-button" href={`/admin/leads?draft=${encodeURIComponent(draftId)}`}>返回候选池修改</Link></section>;
+  if (error && !preview) return <section className="candidate-import-panel candidate-import-error" aria-label="候选导入预览" role="alert"><p>{error}</p><Link className="secondary-button" href={`/admin/leads?draft=${encodeURIComponent(draftId)}`}>返回线索池修改</Link></section>;
 
   return <section className="candidate-import-panel" aria-label="候选导入预览">
     <div className="candidate-import-heading"><div><p className="kicker">CANDIDATE DRAFT / PREVIEW</p><h2>候选导入预览</h2></div><div className="candidate-import-version">{preview?.version ? `预览版本 ${preview.version}` : '已提交'}</div></div>
@@ -117,7 +117,7 @@ export function CandidateImportPreview({ draftId }: { draftId: string }) {
           return <article className={`candidate-preview-row ${errors.length ? 'has-errors' : ''}`} key={`${String(row.place_name)}-${String(row.menu_item_name)}-${index}`}><div className="candidate-preview-row-title"><strong>{String(row.place_name || '未命名店铺')}</strong><span>{String(row.menu_item_name || '未命名餐食')}</span></div><dl><div><dt>片区</dt><dd>{String(row.zone_name || '—')}</dd></div><div><dt>地址</dt><dd>{String(row.address || '—')}</dd></div><div><dt>位置</dt><dd>{row.lng && row.lat ? `${Number(row.lng).toFixed(6)}, ${Number(row.lat).toFixed(6)}` : '—'}</dd></div><div><dt>常规价</dt><dd className="candidate-preview-price">{row.price_yuan ? `¥${Number(row.price_yuan).toFixed(2)}` : '—'}</dd></div><div><dt>核验</dt><dd>{String(row.observed_date || '—')} · {label(String(row.verification_method || '—'))}</dd></div></dl>{errors.length > 0 && <ul className="candidate-preview-errors">{errors.map((item) => <li key={item}>{item}</li>)}</ul>}</article>;
         })}
       </div>
-      <div className="candidate-import-actions"><Link className="secondary-button" href={`/admin/leads?draft=${encodeURIComponent(draftId)}`}>← 返回候选池修改</Link>{preview.valid && !message && <button className="primary-button" type="button" onClick={() => void commit()} disabled={busy}>确认提交候选 <span>↗</span></button>}</div>
+      <div className="candidate-import-actions"><Link className="secondary-button" href={`/admin/leads?draft=${encodeURIComponent(draftId)}`}>← 返回线索池修改</Link>{preview.valid && !message && <button className="primary-button" type="button" onClick={() => void commit()} disabled={busy}>确认提交候选 <span>↗</span></button>}</div>
     </>}
   </section>;
 }

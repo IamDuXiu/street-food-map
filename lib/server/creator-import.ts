@@ -121,13 +121,14 @@ function ensureCreatorZone(db: SqliteDatabase, city: string): string {
     | { name: string; center_lng: number; center_lat: number }
     | undefined;
   db.prepare(
-    'INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,active) VALUES (?,?,?,?,?,1)',
+    'INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,city,active) VALUES (?,?,?,?,?,?,1)',
   ).run(
     id,
     `${region?.name ?? city} · 创作者来源`,
     'office_worker',
     region?.center_lng ?? 113.9,
     region?.center_lat ?? 22.5,
+    city,
   );
   return id;
 }

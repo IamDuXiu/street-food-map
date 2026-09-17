@@ -35,6 +35,8 @@ export interface Meal {
 export interface Place {
   id: string;
   zoneId: ZoneId;
+  /** City region id (e.g. `shenzhen`); absent for legacy rows with unknown city. */
+  city?: string;
   name: string;
   address: string;
   lng: number;

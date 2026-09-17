@@ -69,7 +69,7 @@ def ensure_public_fixture(page: Page, route: str) -> None:
 def ensure_admin_fixture(page: Page, route: str) -> None:
     headings = {
         "/admin": "总览",
-        "/admin/leads": "候选池",
+        "/admin/leads": "线索池",
         "/admin/submissions": "投稿审核队列",
         "/admin/places": "地点与餐食",
         "/admin/import": "导入一批饭签",

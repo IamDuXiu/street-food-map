@@ -150,6 +150,7 @@ export function HomeClient() {
     if (tag !== 'all') params.set('tag', tag);
     if (debouncedQuery) params.set('q', debouncedQuery);
     if (requestBbox) params.set('bbox', requestBbox.join(','));
+    if (regionId !== 'nearby') params.set('city', cityId);
 
     queueMicrotask(() => { setLoading(true); setError(null); });
     fetch(`/api/v1/map?${params.toString()}`, { signal: controller.signal })
@@ -178,7 +179,7 @@ export function HomeClient() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [maxPrice, regionId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion, selectedRegion]);
+  }, [maxPrice, regionId, cityId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion, selectedRegion]);
 
   function chooseRegion(region: ShenzhenRegion) {
     setRegionId(region.id);
@@ -258,7 +259,6 @@ export function HomeClient() {
           <label className={styles.filterControl}>条件<Select variant="bare" value={tag} onChange={setTag} ariaLabel="按条件或标签筛选" options={[{ value: 'all', label: '全部' }, ...availableTags.map((item) => ({ value: item, label: item }))]} /></label>
           <label className={styles.filterControl}>排序<Select variant="bare" value={sort} onChange={(next) => setSort(next as SortMode)} ariaLabel="结果排序" options={[{ value: 'price', label: '最低价优先' }, { value: 'freshness', label: '最近核验' }, { value: 'distance', label: origin ? '附近优先' : '附近优先（先定位）', disabled: !origin }]} /></label>
           <button type="button" className={regionId === 'nearby' ? styles.locateButtonActive : styles.locateButton} aria-pressed={regionId === 'nearby'} onClick={locateNearby}>◎ 我的附近</button>
-          <span className={styles.filterHint}>有效餐食 ≤ {formatPrice(maxPrice * 100)}</span>
         </div>
         {activeChips.length > 0 && (
           <div className={styles.activeFilterRow} aria-label="已选筛选">

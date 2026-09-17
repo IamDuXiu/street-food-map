@@ -21,6 +21,7 @@ const migrationFiles = [
   '007_candidate_pool_reconcile.sql',
   '008_regions.sql',
   '009_creator_sources.sql',
+  '010_place_city.sql',
 ];
 
 afterEach(() => {
@@ -110,19 +111,19 @@ function makeTarget(root: string) {
 }
 
 describe('database migration reconciliation', () => {
-  it('fresh databases reach schema 9 with the matched column and delete trigger', () => {
+  it('fresh databases reach schema 10 with the matched column and delete trigger', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-fresh-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'fresh.sqlite'));
     const objects = schemaObjects(db);
-    expect(objects.version).toBe(9);
+    expect(objects.version).toBe(10);
     expect(objects.matchedColumn).toBe(true);
     expect(objects.matchedForeignKey).toBe(true);
     expect(objects.trigger?.name).toBe('source_leads_referenced_delete');
     db.close();
   });
 
-  it('fresh schema 9 adds region catalog and creator-source tables/columns', () => {
+  it('fresh schema 10 adds region catalog, creator-source and city columns', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-creator-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'creator.sqlite'));
@@ -154,6 +155,14 @@ describe('database migration reconciliation', () => {
         'public_visibility',
       ]),
     );
+    const zoneColumns = (
+      db.pragma('table_info(pilot_zones)') as Array<{ name: string }>
+    ).map((column) => column.name);
+    expect(zoneColumns).toContain('city');
+    const placeColumns = (
+      db.pragma('table_info(places)') as Array<{ name: string }>
+    ).map((column) => column.name);
+    expect(placeColumns).toContain('city');
     const now = new Date().toISOString();
     db.prepare(
       "INSERT INTO pilot_zones(id,name,audience,center_lng,center_lat,active) VALUES ('creator-zone','创作者片区','student',113.9,22.5,1)",
@@ -193,12 +202,12 @@ describe('database migration reconciliation', () => {
     const missingDb = openDatabase(missing);
     const existingDb = openDatabase(existing);
     expect(schemaObjects(missingDb)).toMatchObject({
-      version: 9,
+      version: 10,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     expect(schemaObjects(existingDb)).toMatchObject({
-      version: 9,
+      version: 10,
       matchedColumn: true,
       matchedForeignKey: true,
     });
@@ -206,7 +215,7 @@ describe('database migration reconciliation', () => {
     existingDb.close();
   });
 
-  it('opening schema 9 again is idempotent and preserves key schema objects', () => {
+  it('opening schema 10 again is idempotent and preserves key schema objects', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-repeat-'));
     roots.push(root);
     const file = path.join(root, 'repeat.sqlite');
@@ -219,7 +228,7 @@ describe('database migration reconciliation', () => {
     second.close();
   });
 
-  it('schema-9 delete trigger blocks removing a lead referenced by a price', () => {
+  it('schema-10 delete trigger blocks removing a lead referenced by a price', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-trigger-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'trigger.sqlite'));
@@ -248,7 +257,7 @@ describe('database migration reconciliation', () => {
     db.close();
   });
 
-  it('restores a schema-4 archive by migrating staging to schema 9', async () => {
+  it('restores a schema-4 archive by migrating staging to schema 10', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema4-'));
     roots.push(root);
     const legacy = path.join(root, 'legacy.sqlite');
@@ -262,18 +271,18 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 9,
+      version: 10,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     restored.close();
   });
 
-  it('schema-9 backup round-trip keeps the reconciled schema objects', async () => {
+  it('schema-10 backup round-trip keeps the reconciled schema objects', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema9-'));
     roots.push(root);
     const source = openDatabase();
-    expect(schemaObjects(source)).toMatchObject({ version: 9, matchedColumn: true });
+    expect(schemaObjects(source)).toMatchObject({ version: 10, matchedColumn: true });
     const archive = await createBackup(path.join(root, 'backups'));
     const target = makeTarget(root);
     await restoreBackup(archive, 'RESTORE-BUDGET-MAP', {
@@ -283,7 +292,7 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 9,
+      version: 10,
       matchedColumn: true,
       matchedForeignKey: true,
     });

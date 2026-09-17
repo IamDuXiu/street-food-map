@@ -519,9 +519,9 @@ export function CandidatePoolWorkspace({ initialDraftId }: { initialDraftId?: st
   if (loading) return <div className="candidate-loading" aria-live="polite">正在读取候选线索……</div>;
   if (error && !stores.length) return <div className="candidate-empty candidate-error-state" role="alert"><strong>{error}</strong><p>请确认已登录，或刷新页面重试。</p></div>;
 
-  return <section className="candidate-workspace" aria-label="候选线索池">
+  return <section className="candidate-workspace" aria-label="线索池">
     <div className="candidate-overview">
-      <div className="candidate-overview-copy"><p className="kicker">候选池 / CANDIDATE POOL</p></div>
+      <div className="candidate-overview-copy"><p className="kicker">线索池 / LEADS</p></div>
       <div className="candidate-overview-metrics"><span><b>{stores.length}</b> 家店</span><span><b>{groups.reduce((sum, group) => sum + group.items.length, 0)}</b> 份线索餐食</span><span><b>{drafts.length}</b> 份最近草稿</span></div>
     </div>
     <div className="candidate-toolbar">

@@ -1,11 +1,23 @@
 # 阶段 5 准备进度
 
+## 城市归属字段 + 术语统一（2026-09-15）
+
+- [x] migration 010 `010_place_city.sql`：`pilot_zones` 与 `places` 新增 `city` 列 + `idx_places_city`；按 `creator-<cityId>` 前缀与最小包含城市 bbox 回填；真实库 schema 9→10，`places.city` 全部回填（demo=深圳市，creator=佛山/深圳/广州）。修复 HANDOFF §12「广州 bbox 返回佛山点位」。
+- [x] 运行时：`Place.city`；`PlaceRepository.create` 由所属片区派生 city；`toPlace` 与公开 DTO 透出 city；`listPublic({ city })` 使用 `(p.city IS NULL OR p.city = ?)` 排除异地串点；`/api/v1/map?city=` 校验城市存在；首页非「我的附近」时携带 `city`。
+- [x] 迁移纪律：`scripts/restore.ts` `CURRENT_SCHEMA=10`、`SUPPORTED_BACKUP_SCHEMAS=[...,10]`；`tests/migrations.test.ts` 版本断言与迁移清单同步；`tests/restore.test.ts` 归档 manifest 版本同步。
+- [x] 术语统一：`/admin/leads` 页标题与 eyebrow、线索池 kicker、候选导入预览返回链接、`scripts/acceptance_unified_ui.py` 断言，以及代码仓/文档仓全部「候选池」→「线索池」；内部英文标识保持不变。
+- [x] 新增测试：`tests/phase2-public.test.ts` 城市过滤用例（重叠 bbox 下按 city 排除异地串点）。
+- [x] 首页布局修复：`.homeLayout` 网格行改 `grid-template-rows: minmax(0, 1fr)` 并 `align-items: stretch`（覆盖 `app/globals.css` 的 `.home-layout { align-items: start }`）。此前隐式 `auto` 行被左侧结果列表撑到内容高度（实测 966px > 容器 580px），整页被撑高、出现大片空白；现在列表约束在视口内并显示面板内滚动条，地图同高（1440×900 实测：文章 doc=900，列表 600 可滚动，地图 600）。
+- [x] 缩小窗口时地图覆盖列表修复（620–900px 单列段）：该段不再用两行网格（auto 行被 966px 列表撑高、430px 地图行压在列表上），改为 `.homeLayout { display: block }` 纵向堆叠——列表完整展示、地图 `430px` 置底、页面正常滚动；≤620px 保持原有地图铺底 + 底部抽屉设计。实测 800×900：列表 bottom=1224、地图 top=1242，无重叠。
+- [x] 去重预算提示：删除筛选行右侧静态文案「有效餐食 ≤ ¥XX」（与可清除的 `预算 ≤ ¥XX ×` chip 重复），连带删除 `.filterHint` 样式与移动端隐藏规则；保留可点击清除的预算 chip。
+- 验证：`npm run lint` / `typecheck` / `npm test`（25 文件 / **151 测试**）/ `npm run build`（exit 0）全通过。
+
 ## 真实产品化：统一风格 + 移除脚手架文案（2026-09-13）
 
 - [x] 用户端与后台端统一浅色体系：后台不再使用深色顶栏/侧栏，沿用 `ac95fab` unified foundation 的浅色 token；`.admin-title h1` 收窄到公共标题同一字号（24–32px）；删除 `demo-pill` 及脉冲动画 CSS。
 - [x] 移除 Demo/本地标记：后台页头 `本地工作台`、侧栏 `工作台 / 深圳试点` + `LOCAL DATASET` + `本地数据环境 · 所有写入均可审计`、5 个后台页的 `demo-pill` 徽章、`正在读取本地数据库`、`当前显示本地演示数据`、以及「本地服务/本地数据」类错误文案。
-- [x] 移除引导性说明文案：候选池概览段与核验详情默认说明、`三件事都确认，再进入预览`、区域管理/创作者导入/区域目录/投稿审核的页顶说明与提示、区域选择器底部说明与空状态引导、候选导入预览说明、About 品牌语与引导段。
-- [x] 移除占位/示例内容：`待共建`（`lib/regions.ts`、`lib/server/region-repository.ts`、`components/region-picker.tsx`）、创作者导入预置 SAMPLE JSON（改为空数组）、候选池空状态的 seed 脚本指引、`试点` 措辞、导入页示意步骤描述与 fake 预览框。
+- [x] 移除引导性说明文案：线索池概览段与核验详情默认说明、`三件事都确认，再进入预览`、区域管理/创作者导入/区域目录/投稿审核的页顶说明与提示、区域选择器底部说明与空状态引导、候选导入预览说明、About 品牌语与引导段。
+- [x] 移除占位/示例内容：`待共建`（`lib/regions.ts`、`lib/server/region-repository.ts`、`components/region-picker.tsx`）、创作者导入预置 SAMPLE JSON（改为空数组）、线索池空状态的 seed 脚本指引、`试点` 措辞、导入页示意步骤描述与 fake 预览框。
 - [x] 线索池与其它后台页对齐：工具栏去掉灰底与描边（改透明），搜索框改白底 1px 描边 + 8px 圆角，左侧店铺列表去掉灰底、白卡直接落在页面背景并移除列表面板外框，详情面板仍为白底 1px 卡片；列表/详情标题分隔线由 2px 墨色改 1px，标题字号收窄。
 - [x] 全站一致性复核（用户端 + 后台，2026-09-13）：后台 eyebrow 统一为 `NN / ENGLISH` 并修正编号（导出 06→08、审计 07→09）；后台标题统一为名词（`总览`/`审计记录`）；移除开发/运维导向文案（SQLite/命令行/`RESTORE-BUDGET-MAP`、「数据库未改变」→「数据未改变」、地图「无需密钥」「地图尚未配置」）；精简仪表盘指标副文案、投稿分节标题与地点详情旁白；导入页移除装饰性三步流程框；同步 `scripts/acceptance_unified_ui.py` 断言。
 - 保留（属真实产品内容）：公共「收录标准 / 可信度 / 数据声明」、错误与状态提示、字段标签与 aria、英文编号脚手架（01/02 等）。
@@ -15,14 +27,14 @@
 
 - [x] 修复投稿表单下拉“标签与控件同行”：`.submission-form` 的块级控件规则原先只覆盖 `input`/`textarea`，漏掉 `select`；补入后 `地点/餐食/核验方式/状态/所属样板区/要修改的字段` 统一为“上标题、下控件”，帮助文案独占一行。
 - [x] 新增 `components/ui/Select`（combobox + listbox）：三角符右边距固定 10px；展开列表宽度锁定为字段宽度、不超出；支持方向键/Home/End/Enter/Esc、点击外部关闭、`aria-invalid/aria-describedby`；值写入同名隐藏 `input`，`FormData` 与提交链路不变；提供 `field/compact/bare` 变体。
-- [x] 迁移全部原生 `<select>`：投稿表单 7、候选池 6（4 表单字段 + 风险筛选 + 恢复最近草稿）、区域管理 2、审核动作 1、首页筛选 2（条件/排序用 `bare` 保留原筛选胶囊）。
+- [x] 迁移全部原生 `<select>`：投稿表单 7、线索池 6（4 表单字段 + 风险筛选 + 恢复最近草稿）、区域管理 2、审核动作 1、首页筛选 2（条件/排序用 `bare` 保留原筛选胶囊）。
 - [x] 区域目录弹窗改版：浅色 surface、12px 圆角、柔和投影；“当前城市”并入头部并删除重复横幅；城市改胶囊 chip；左栏目录圆角选中态 + 品牌侧条；覆盖状态改软标签。
-- [x] 交互一致性修复：候选池字段控件直角改 8px 圆角、硬偏移焦点阴影改品牌柔光环；`.choice-grid` 单选卡改品牌焦点 + 圆角。
+- [x] 交互一致性修复：线索池字段控件直角改 8px 圆角、硬偏移焦点阴影改品牌柔光环；`.choice-grid` 单选卡改品牌焦点 + 圆角。
 - [x] e2e 同步：`core-flow`/`candidate-pool` 中受影响的 `selectOption`/`toHaveValue` 改用自定义控件（`getByRole('combobox')` + `[role=option][data-value]`）。
 
 验证（2026-09-13）：
 - `npm run lint` / `typecheck` / `npm test`（25 文件 / 150 测试）/ `npm run build`（exit 0）全通过。
-- 定向 e2e 通过：用户端筛选状态恢复、定位后排序、候选池完整提交链路。
+- 定向 e2e 通过：用户端筛选状态恢复、定位后排序、线索池完整提交链路。
 - 计算样式：表单下拉列表宽 680px = 字段宽；首页筛选列表 88px = 字段宽；箭头距字段内边 10px。
 - 既有 e2e 失败**已修**（2026-09-13 遗留清理）：4 处区域导航名陈旧的 `深圳行政区` 改为实际渲染的 `深圳市行政区`（`e2e/core-flow.spec.ts` ×3、`e2e/unified-ui-regressions.spec.ts` ×1）；1 处投稿类型文案正则 `/价格变化/` 改为与实际文案一致的 `/价格有变化/`（`e2e/core-flow.spec.ts`）。全量 e2e **46 通过**（mobile + desktop）。
 

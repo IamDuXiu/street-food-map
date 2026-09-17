@@ -16,7 +16,7 @@
 | `components/` | 13 个组件：home-client、map-stage、region-picker、place-card、trust-badge、site-header、admin-shell、admin-actions、import-workbench、candidate-pool、candidate-import-preview、coordinate-picker |
 | `lib/` | types、filter、geo（WGS-84→GCJ-02）、csv（16 中文列名）、fixtures、map-adapter（TencentAdapter/DemoMapAdapter）、regions（深圳目录）、candidate-pool（1574 行） |
 | `lib/server/` | db、repository（734）、services（837）、validation（340）、auth、page-auth、public、media、audit、seed |
-| `db/migrations/` | 001 初始 17 表；002/003 索引；004 线索引用触发器；005 投稿令牌/限流；006 候选池；007 schema 漂移对账 |
+| `db/migrations/` | 001 初始 17 表；002/003 索引；004 线索引用触发器；005 投稿令牌/限流；006 线索池；007 schema 漂移对账 |
 | `scripts/` | setup-demo、admin-password、backup、restore、maintenance、fresh-start-check、dev-lan、phase5-check、seed-candidate-pool、视觉审计 |
 | `tests/` `e2e/` | Vitest 11 文件；Playwright core-flow + candidate-pool（22 流程） |
 
