@@ -11,7 +11,8 @@
 - [x] migration 011 `source_leads.review_notes`（评价仅人工参考，公开 DTO 不读取）；`restore.ts` `CURRENT_SCHEMA=11`；测试迁移清单/断言同步。
 - [x] 存量切换：备份后 `npm run setup` 回填区域（122→170）并刷新 demo 价格（`shenda-west-noodle` 1800→1500、`kexing-b1-foodcourt` 2000→1500），使 demo 店按新门槛公开；宏兴茶餐厅 ¥20、佛山店按新口径自动下架（数据留库）。
 - [x] 验证：`lint` / `typecheck` / `npm test`（26 文件 / **156 测试**）/ `build` 全通过；B站小量跑（5 城词表 `--pages 1`）80 抓取 → 13 条（广州 3 / 深圳 6 / 北京 4，含待补占位），验证新城市与 15 元门槛生效。
-- [ ] 待用户提供 `MINIMAX_API_KEY` 后跑 `npm run collect:web`（必应小批量）并做「预览→人工确认坐标→提交」端到端走查。
+- [x] **网页采集真机跑通（2026-09-20）**：默认引擎改百度（必应本机被反爬墙），解析百度跳转取最终 URL；MiniMax 适配器兼容两种返回格式。5 城 × 1 词 × 3 条 → 抓取 13、产 11 条。隔离实例（端口 3211）端到端：粘贴 4 条 → 预览（广州自动地理编码就绪、上海人工补坐标）→ 导入 4 条/3 店 → 公开页显示「未核验 · web@周伟良 / web@邻里漫评」；`review_notes` 落库不公开。
+- [x] `creatorImportRecordSchema` 增加 `reviewNotes` 并写入 `source_leads.review_notes`；新增/更新测试（160 测试全通过）。
 
 ## 城市归属字段 + 术语统一（2026-09-15）
 

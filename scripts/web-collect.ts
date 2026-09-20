@@ -235,8 +235,17 @@ export function shopToLead(
   const address = shop.address?.trim();
   const mealName =
     shop.mealName?.trim() || shop.recommended?.trim() || '探店餐食';
-  const site = (shop.site?.trim() || hostnameOf(hit.url)).slice(0, 40);
-  const author = (shop.author?.trim() || site).slice(0, 120);
+  // The model sometimes echoes the article URL into `site`/`author`; normalise
+  // those to a bare hostname so the source token stays `web@<站点>`.
+  const cleanName = (value: string | undefined, fallback: string): string => {
+    const text = value?.trim();
+    if (!text) return fallback;
+    if (/^https?:\/\//i.test(text) || text.includes('://')) return hostnameOf(text);
+    return text.replace(/^@/, '');
+  };
+  const host = hostnameOf(hit.url);
+  const site = cleanName(shop.site, host).slice(0, 40);
+  const author = cleanName(shop.author, site).slice(0, 120);
   const record: WebLeadRecord = {
     storeName: storeName || `${city.full}·${mealName}（待补店名）`,
     mealName,
@@ -377,7 +386,7 @@ export async function collectWebLeads(
   const keywords = options.keywords?.length
     ? options.keywords
     : defaultKeywords(2);
-  const engine = options.engine ?? 'bing';
+  const engine = options.engine ?? 'baidu';
   const maxHits = options.maxHits ?? 8;
   const delayMs = options.delayMs ?? 1500;
   const doFetch = options.fetchImpl ?? fetch;
@@ -407,26 +416,47 @@ export async function collectWebLeads(
       });
       continue;
     }
-    const hits = (engine === 'baidu' ? parseBaiduHtml(html) : parseBingHtml(html))
-      .filter((hit) => !isBlockedHost(hit.url))
-      .slice(0, maxHits);
-    for (const raw of hits) {
-      const url = canonicalUrl(raw.url);
+    // Ranked result links. Baidu wraps真实链接 in `www.baidu.com/link?url=...`
+    // redirects, so the blocked-host filter runs *after* redirect resolution
+    // (see below) and candidates are capped a little above `maxHits`.
+    const candidates = (engine === 'baidu' ? parseBaiduHtml(html) : parseBingHtml(html)).slice(
+      0,
+      maxHits * 3,
+    );
+    let keptHits = 0;
+    for (const raw of candidates) {
+      if (keptHits >= maxHits) break;
+      let url = canonicalUrl(raw.url);
+      let body = raw.snippet;
+      let fetchedOk = false;
+      try {
+        const page = await doFetch(raw.url, {
+          headers: { 'user-agent': options.userAgent ?? DEFAULT_USER_AGENT },
+        });
+        // `response.url` is the final URL after redirects (Baidu `/link?url=`).
+        if (typeof page.url === 'string' && page.url) url = canonicalUrl(page.url);
+        if (page.ok) {
+          body = extractArticleText(await page.text()) || raw.snippet;
+          fetchedOk = true;
+        }
+      } catch {
+        // Fall back to the search snippet and the原文链接 as-is.
+      }
+      if (isBlockedHost(url)) {
+        skipped.push({ url, title: raw.title, reason: 'blocked_host' });
+        continue;
+      }
+      if (!fetchedOk && !raw.snippet) {
+        skipped.push({ url, title: raw.title, reason: 'fetch_failed' });
+        continue;
+      }
       if (seen.has(url)) {
         skipped.push({ url, title: raw.title, reason: 'duplicate' });
         continue;
       }
       seen.add(url);
+      keptHits += 1;
       fetched += 1;
-      let body = raw.snippet;
-      try {
-        const page = await doFetch(url, {
-          headers: { 'user-agent': options.userAgent ?? DEFAULT_USER_AGENT },
-        });
-        if (page.ok) body = extractArticleText(await page.text()) || raw.snippet;
-      } catch {
-        // Fall back to the search snippet.
-      }
       if (!options.extract) {
         skipped.push({ url, title: raw.title, reason: 'no_extractor' });
         continue;
@@ -519,7 +549,7 @@ export async function runWebCollectCli(
   argv = process.argv.slice(2),
 ): Promise<void> {
   loadLocalEnv();
-  let engine: 'bing' | 'baidu' = 'bing';
+  let engine: 'bing' | 'baidu' = 'baidu';
   let out = 'outputs/web-collect.json';
   let maxHits = 5;
   let delayMs = 1500;
@@ -545,7 +575,7 @@ export async function runWebCollectCli(
   npm run collect:web -- [选项]
 
 选项：
-  --engine bing|baidu     搜索引擎（默认 bing）
+  --engine bing|baidu     搜索引擎（默认 baidu；bing 在部分网络已是反爬墙）
   --keywords "词1,词2"    覆盖默认小批量词表
   --hits N                每个关键词取前 N 条（默认 5）
   --delay-ms N            请求间隔（默认 1500）

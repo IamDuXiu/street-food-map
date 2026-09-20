@@ -16,6 +16,15 @@
 
 验证：`lint` / `typecheck` / `npm test`（26 文件 / 156 测试）/ `build` 全通过；真实库备份 `budget-map-backup-20260920012113.zip` 后迁移并回填；B站小量跑（5 城词表，`--pages 1`）抓取 80 → 产 13 条（广州 3 / 深圳 6 / 北京 4）。网页采集待用户提供 `MINIMAX_API_KEY` 后跑。
 
+### 网页采集真机跑通后的加固（同日）
+
+10. **默认引擎改百度**：必应（cn/www）在本机对不同查询返回同一批通用结果（机器人墙），百度返回结果明显相关（命中「学生党实测 15 元吃饱」等真实文章）。`--engine` 仍可切换，默认 `baidu`；百度结果链接为 `www.baidu.com/link?url=...`，采集时先用 `response.url` 解析到最终 URL 再判黑名单与去重，`contentUrl` 存最终文章地址。
+11. **MiniMax 适配器**：兼容 OpenAI（`choices[0].message.content`）与 MiniMax 原生（`choices[0].messages[0].content` / `reply` / `data.reply`）两种返回；识别 `base_resp.status_code` 与 `error.message` 两类错误；`author`/`site` 回传 URL 时归一为裸域名（来源标签 `web@<域名>`）。
+12. **评价落库但不公开**：`creatorImportRecordSchema` 增加可选 `reviewNotes`（≤500），导入时写入 `source_leads.review_notes`（migration 011 列）；公开 DTO 不读取，人工复核可见。
+13. **真机小量跑（5 城 × 1 词 × 3 条，百度）**：抓取 13 → 产 11 条（北京 1 / 上海 7 / 广州 3）；skip：`blocked_host` 15、`no_shop_extracted` 6、`no_budget_meal` 3、`fetch_failed` 1。
+14. **端到端走查（隔离实例，端口 3211）**：粘贴 4 条（上海 2 / 广州 2）→ 预览（广州 2 条自动地理编码「就绪」；上海 2 条地址缺市名，人工补坐标）→ 确认导入「已导入 4 条（新建门店 3 个）」→ 公开地图显示 `五元饺子四元面 / web@周伟良 / 未核验 ¥4`、上海 `土山湾社区食堂`、`鸿瑞兴`；`entity_sources` 店级+餐级双挂，`review_notes` 落库且不出现在公开 DTO。
+15. **环境备注**：Turbopack `next dev` 下 `/admin/*` 在本机浏览器面板中停留在 `loading.tsx` 骨架（流式替换未完成）；`next start`（生产构建）正常。Playwright e2e 全绿，未复现该现象。记入已知问题观察。
+
 ## 2026-09-15 · 城市归属字段 + 术语统一为「线索池」
 
 后台 `/admin/leads` 此前导航写「线索池」、页内标题与 eyebrow 写「候选池」，术语不一致；统一为「线索池」（eyebrow `02 / LEADS`，kicker `线索池 / LEADS`）。内部英文标识（`lib/candidate-pool.ts`、`components/candidate-pool.tsx`、`candidate-*` CSS 类）保持不变，只统一展示文案。

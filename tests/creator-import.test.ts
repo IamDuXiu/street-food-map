@@ -172,6 +172,30 @@ describe('创作者内容导入提交', () => {
     db.close();
   });
 
+  it('网页评价写入来源线索但不进入公开 DTO', () => {
+    const db = tempDb();
+    commitCreatorImport(db, [
+      creatorImportRecordSchema.parse({
+        ...base,
+        platform: 'web',
+        creatorName: '某站点',
+        contentUrl: 'https://example.com/article',
+        reviewNotes: '分量足，排队久',
+        lng: 113.32,
+        lat: 23.12,
+      }),
+    ]);
+    const lead = db
+      .prepare(
+        "SELECT review_notes notes FROM source_leads WHERE content_url='https://example.com/article'",
+      )
+      .get() as { notes: string | null };
+    expect(lead.notes).toBe('分量足，排队久');
+    const dto = new PlaceRepository(db).listPublic({ now: new Date() })[0];
+    expect(JSON.stringify(dto)).not.toContain('分量足');
+    db.close();
+  });
+
   it('缺少坐标时提交抛错（数据库不写入）', () => {
     const db = tempDb();
     const record = creatorImportRecordSchema.parse(base);

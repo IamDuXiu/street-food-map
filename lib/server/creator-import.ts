@@ -35,6 +35,8 @@ export const creatorImportRecordSchema = z
     creatorName: z.string().trim().min(1).max(120),
     contentUrl: z.string().url().optional().or(z.literal('')),
     contentTitle: z.string().max(200).optional(),
+    // Web-article review excerpt: admin-only, never exposed by the public DTO.
+    reviewNotes: z.string().trim().max(500).optional(),
     matchedPlaceId: z.string().min(1).optional(),
   })
   .superRefine((value, ctx) => {
@@ -178,8 +180,8 @@ function ensureContentLead(
        id, source_platform, source_url, clue_place_name, clue_item_name, clue_price_fen,
        summary, status, matched_place_id, discovery_method,
        platform, content_title, content_url, published_at, city, public_visibility,
-       created_at, updated_at
-     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+       review_notes, created_at, updated_at
+     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   ).run(
     id,
     'other',
@@ -197,6 +199,7 @@ function ensureContentLead(
     record.observedAt ?? null,
     record.city,
     'listed',
+    record.reviewNotes ?? null,
     now,
     now,
   );

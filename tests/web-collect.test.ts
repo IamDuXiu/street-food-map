@@ -55,7 +55,7 @@ describe('网页采集抽取', () => {
     ).toEqual([{ storeName: '桥底卤肉饭', priceYuan: 12 }]);
   });
 
-  it('抽取结果对齐导入 schema，评价不进入公开字段', () => {
+  it('抽取结果对齐导入 schema，评价随记录带入人工复核', () => {
     const record = shopToLead(
       {
         storeName: '桥底卤肉饭',
@@ -71,9 +71,11 @@ describe('网页采集抽取', () => {
     expect(record?.city).toBe('beijing');
     expect(record?.reviewNotes).toBe('分量足，排队久');
     expect(creatorImportRecordSchema.safeParse(record).success).toBe(true);
-    expect(
-      creatorImportRecordSchema.parse(record),
-    ).not.toHaveProperty('reviewNotes');
+    // reviewNotes is accepted by the import schema but only persisted to the
+    // admin-only lead; the public DTO assertion lives in creator-import.test.ts.
+    expect(creatorImportRecordSchema.parse(record).reviewNotes).toBe(
+      '分量足，排队久',
+    );
   });
 
   it('无城市或无价格的抽取结果丢弃', () => {
