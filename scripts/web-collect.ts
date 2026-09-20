@@ -268,6 +268,45 @@ export function shopToLead(
   return record;
 }
 
+/**
+ * Read the assistant text out of either MiniMax response shape:
+ *  - OpenAI-compatible: `choices[0].message.content`
+ *  - MiniMax native v2: `choices[0].messages[0].content` / `reply` / `data.reply`
+ * `reasoning_content` is deliberately ignored (we only want the answer).
+ */
+export function extractMiniMaxText(payload: unknown): string {
+  if (!payload || typeof payload !== 'object') return '';
+  const root = payload as Record<string, unknown>;
+  const choices = root.choices;
+  if (Array.isArray(choices) && choices.length) {
+    const choice = choices[0] as Record<string, unknown>;
+    const message = choice.message as Record<string, unknown> | undefined;
+    if (message && typeof message.content === 'string') return message.content;
+    const messages = choice.messages;
+    if (Array.isArray(messages) && messages.length) {
+      const first = messages[0] as Record<string, unknown>;
+      if (typeof first.content === 'string') return first.content;
+      if (typeof first.text === 'string') return first.text;
+    }
+    if (typeof choice.text === 'string') return choice.text;
+  }
+  if (typeof root.reply === 'string') return root.reply;
+  const data = root.data as Record<string, unknown> | undefined;
+  if (data && typeof data.reply === 'string') return data.reply;
+  return '';
+}
+
+function miniMaxErrorMessage(payload: unknown): string | undefined {
+  if (!payload || typeof payload !== 'object') return undefined;
+  const baseResp = (payload as { base_resp?: { status_code?: number; status_msg?: string } })
+    .base_resp;
+  if (baseResp && typeof baseResp.status_code === 'number' && baseResp.status_code !== 0)
+    return `MINIMAX_CODE_${baseResp.status_code}:${baseResp.status_msg ?? ''}`;
+  const error = (payload as { error?: { message?: string } }).error;
+  if (error?.message) return `MINIMAX_ERROR:${error.message}`;
+  return undefined;
+}
+
 export async function callMiniMax(
   prompt: string,
   options: {
@@ -295,10 +334,10 @@ export async function callMiniMax(
     }),
   });
   if (!response.ok) throw new Error(`MINIMAX_HTTP_${response.status}`);
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  return payload.choices?.[0]?.message?.content ?? '';
+  const payload: unknown = await response.json();
+  const apiError = miniMaxErrorMessage(payload);
+  if (apiError) throw new Error(apiError);
+  return extractMiniMaxText(payload);
 }
 
 export interface WebCollectOptions {

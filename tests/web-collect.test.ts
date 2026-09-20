@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  callMiniMax,
   defaultKeywords,
   extractArticleText,
+  extractMiniMaxText,
   parseBingHtml,
   parseExtractedJson,
   shopToLead,
@@ -81,5 +83,56 @@ describe('网页采集抽取', () => {
     expect(
       shopToLead({ storeName: '某店', city: 'beijing' }, hit),
     ).toBeUndefined();
+  });
+});
+
+describe('MiniMax 适配器', () => {
+  it('兼容 OpenAI 与 MiniMax 原生两种返回格式', () => {
+    expect(
+      extractMiniMaxText({ choices: [{ message: { content: '[{"a":1}]' } }] }),
+    ).toBe('[{"a":1}]');
+    expect(
+      extractMiniMaxText({ choices: [{ messages: [{ content: '[{"b":2}]' }] }] }),
+    ).toBe('[{"b":2}]');
+    expect(extractMiniMaxText({ reply: '[{"c":3}]' })).toBe('[{"c":3}]');
+    expect(extractMiniMaxText({ data: { reply: '[{"d":4}]' } })).toBe('[{"d":4}]');
+    expect(extractMiniMaxText({ choices: [{ message: { reasoning_content: 'x' } }] })).toBe('');
+  });
+
+  it('http 或 base_resp 错误会抛出', async () => {
+    const ok = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ base_resp: { status_code: 1004, status_msg: 'auth failed' } }),
+    })) as unknown as typeof fetch;
+    await expect(
+      callMiniMax('hi', { apiKey: 'k', fetchImpl: ok }),
+    ).rejects.toThrow(/MINIMAX_CODE_1004/);
+
+    const http = vi.fn(async () => ({ ok: false, status: 401 })) as unknown as typeof fetch;
+    await expect(
+      callMiniMax('hi', { apiKey: 'k', fetchImpl: http }),
+    ).rejects.toThrow(/MINIMAX_HTTP_401/);
+  });
+
+  it('按 base_url/model 组装请求并回传文本', async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    const fake = vi.fn(async (url: string, init: { body: string }) => {
+      calls.push({ url, body: JSON.parse(init.body) });
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ choices: [{ message: { content: 'ok' } }] }),
+      };
+    }) as unknown as typeof fetch;
+    const text = await callMiniMax('prompt', {
+      apiKey: 'secret',
+      baseUrl: 'https://example.test/v1/',
+      model: 'MiniMax-Test',
+      fetchImpl: fake,
+    });
+    expect(text).toBe('ok');
+    expect(calls[0].url).toBe('https://example.test/v1/chat/completions');
+    expect((calls[0].body as { model: string }).model).toBe('MiniMax-Test');
   });
 });
