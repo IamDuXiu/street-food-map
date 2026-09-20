@@ -88,11 +88,11 @@ describe('创作者来源公开口径', () => {
     db.close();
   });
 
-  it('创作者价超 25 元或超 180 天不进入公开', () => {
+  it('创作者价无 ≤15 元餐或超 180 天不进入公开', () => {
     const db = tempDb();
     const today = new Date().toISOString().slice(0, 10);
     seedPlace(db, 'p3', 'm3');
-    addPrice(db, 'cr3', 'm3', 3000, 'external_lead', 'pending', today);
+    addPrice(db, 'cr3', 'm3', 1800, 'external_lead', 'pending', today);
     const repo = new PlaceRepository(db);
     expect(repo.listPublic({ now: new Date() }).some((p) => p.id === 'p3')).toBe(false);
 

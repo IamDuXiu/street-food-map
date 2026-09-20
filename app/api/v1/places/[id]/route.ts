@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { openDatabase } from '@/lib/server/db';
 import { PlaceRepository } from '@/lib/server/repository';
 import { publicPlaceIsEligible, toPublicPlace } from '@/lib/server/public';
+import { SHOP_GATE_PRICE_FEN } from '@/lib/cities';
 import { PLACES, VIEWPORTS } from '@/lib/fixtures';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,8 @@ export async function GET(
     if (
       !data.meals.length ||
       !      place.meals.some(
-        (meal) => meal.priceFen <= 2500 && meal.freshness !== '已过期',
+        (meal) =>
+          meal.priceFen <= SHOP_GATE_PRICE_FEN && meal.freshness !== '已过期',
       )
     )
       return NextResponse.json(

@@ -26,7 +26,7 @@ describe('饭签筛选工具', () => {
   });
 
   it('按价格、样板区和标签组合过滤地点', () => {
-    expect(filterPlaces(PLACES, { maxPrice: 15, zoneId: 'sz university', tag: 'all', query: '' }).map((p) => p.id)).toEqual(['shenda-yuehai-canteen']);
+    expect(filterPlaces(PLACES, { maxPrice: 15, zoneId: 'sz university', tag: 'all', query: '' }).map((p) => p.id)).toEqual(['shenda-yuehai-canteen', 'shenda-west-noodle']);
     expect(filterPlaces(PLACES, { maxPrice: 30, zoneId: 'science park', tag: '早餐', query: '' })).toHaveLength(2);
     expect(filterPlaces(PLACES, { maxPrice: 30, zoneId: 'all', tag: 'all', query: '牛肉' })).toHaveLength(1);
   });

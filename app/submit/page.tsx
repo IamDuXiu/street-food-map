@@ -54,7 +54,7 @@ export default function SubmitPage() {
         setType(initialType as SubmissionType);
       setSelectedPlaceId(params.get('place') ?? '');
     });
-    fetch('/api/v1/map?maxPriceFen=2500')
+    fetch('/api/v1/map?maxPriceFen=20000')
       .then((response) => {
         if (!response.ok) throw new Error('PLACES_UNAVAILABLE');
         return response.json();
@@ -473,9 +473,9 @@ export default function SubmitPage() {
                       name="price"
                       type="number"
                       min="1"
-                      max={type === 'new_place' ? '25' : '1000'}
+                      max={type === 'new_place' ? '15' : '200'}
                       step="0.5"
-                      defaultValue="15"
+                      defaultValue="12"
                     />
                   </label>
                   <label>

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BUDGET_PRICE_YUAN, CITIES, type CityDefinition } from '../lib/cities';
 
 /**
  * Creator content collector (PLAN-CREATOR-DATA.md §6 layer A).
@@ -18,40 +19,31 @@ import { fileURLToPath } from 'node:url';
 
 export type CollectPlatform = 'bilibili' | 'youtube';
 
-export interface PearlRiverCity {
-  id: string;
-  label: string;
-  full: string;
-  aliases: string[];
-}
+export { BUDGET_PRICE_YUAN };
 
-export const BUDGET_PRICE_YUAN = 25;
+export type PearlRiverCity = Pick<
+  CityDefinition,
+  'id' | 'label' | 'full' | 'aliases'
+>;
 
-export const PEARL_RIVER_CITIES: PearlRiverCity[] = [
-  { id: 'guangzhou', label: '广州', full: '广州市', aliases: ['广州', '羊城'] },
-  { id: 'shenzhen', label: '深圳', full: '深圳市', aliases: ['深圳', '鹏城'] },
-  { id: 'foshan', label: '佛山', full: '佛山市', aliases: ['佛山', '禅城'] },
-  { id: 'dongguan', label: '东莞', full: '东莞市', aliases: ['东莞'] },
-  { id: 'zhongshan', label: '中山', full: '中山市', aliases: ['中山'] },
-  { id: 'zhuhai', label: '珠海', full: '珠海市', aliases: ['珠海'] },
-  { id: 'huizhou', label: '惠州', full: '惠州市', aliases: ['惠州'] },
-  { id: 'jiangmen', label: '江门', full: '江门市', aliases: ['江门', '五邑'] },
-  { id: 'zhaoqing', label: '肇庆', full: '肇庆市', aliases: ['肇庆', '端州'] },
-];
+export const PEARL_RIVER_CITIES: PearlRiverCity[] = CITIES.map((city) => ({
+  id: city.id,
+  label: city.label,
+  full: city.full,
+  aliases: city.aliases,
+}));
 
 export const DEFAULT_KEYWORDS: string[] = [
-  '深圳 平价快餐',
-  '深圳 10元快餐',
-  '广州 平价早茶',
-  '广州 自助餐 便宜',
-  '佛山 平价快餐',
-  '东莞 10元快餐',
-  '中山 便宜快餐',
-  '珠海 便宜自助餐',
-  '惠州 平价小吃',
-  '江门 平价快餐',
-  '肇庆 平价早茶',
-  '珠三角 平价快餐',
+  '北京 15元快餐',
+  '上海 10元吃饱',
+  '广州 平价快餐',
+  '深圳 穷鬼套餐',
+  '杭州 大学城 便宜',
+  '北京 工地餐',
+  '上海 盒饭 便宜',
+  '广州 学生党 便宜 吃饭',
+  '深圳 城中村 快餐',
+  '杭州 平价食堂',
 ];
 
 const BILIBILI_SEARCH_ENDPOINT =
@@ -807,7 +799,7 @@ const HELP = `创作者内容采集（B站关键词检索 + YouTube 频道 RSS�
   npm run collect:creators -- [选项]
 
 选项：
-  --keywords "关键词1,关键词2"  B站检索词（默认内置珠三角低价餐食词表）
+  --keywords "关键词1,关键词2"  B站检索词（默认内置 5 城低价餐食词表）
   --youtube  "频道ID1,频道ID2"  YouTube 频道 ID（RSS，可选）
   --pages N                    B站每个关键词抓取页数（1-5，默认 1）
   --delay-ms N                 请求间隔毫秒（默认 1500；遇 B站 -412 自动退避重试）

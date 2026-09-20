@@ -6,6 +6,12 @@ import { distanceMeters } from '../geo';
 import { ageInDays, freshness, freshnessLabel } from '../freshness';
 import { placeTrust } from '../trust';
 import { loadPlaceSourceView } from './sources';
+import {
+  clampDisplayPriceFen,
+  DISPLAY_PRICE_CAP_FEN,
+  PUBLIC_CITY_IDS,
+  SHOP_GATE_PRICE_FEN,
+} from '../cities';
 
 export interface DbPlace extends Place {
   zoneName: string;
@@ -62,15 +68,23 @@ export class PlaceRepository {
     const cutoff = new Date(now.getTime() - 180 * 86400000)
       .toISOString()
       .slice(0, 10);
-    const maxPrice = Math.min(filters.maxPriceFen ?? 2500, 2500);
+    const maxPrice = clampDisplayPriceFen(filters.maxPriceFen);
     const clauses = [
       "p.record_status='active'",
       "p.business_status IN ('open','unknown')",
       'z.active=1',
-      "EXISTS (SELECT 1 FROM menu_items em JOIN price_reports ep ON ep.menu_item_id=em.id WHERE em.place_id=p.id AND em.active=1 AND ((ep.status='verified' AND ep.verification_method <> 'external_lead') OR ep.verification_method='external_lead') AND ep.price_fen<=2500 AND date(ep.observed_at)>=date(?))",
-      "EXISTS (SELECT 1 FROM menu_items fm JOIN price_reports fp ON fp.menu_item_id=fm.id WHERE fm.place_id=p.id AND fm.active=1 AND ((fp.status='verified' AND fp.verification_method <> 'external_lead') OR fp.verification_method='external_lead') AND fp.price_fen<=? AND fp.price_fen<=2500 AND date(fp.observed_at)>=date(?))",
+      `EXISTS (SELECT 1 FROM menu_items em JOIN price_reports ep ON ep.menu_item_id=em.id WHERE em.place_id=p.id AND em.active=1 AND ((ep.status='verified' AND ep.verification_method <> 'external_lead') OR ep.verification_method='external_lead') AND ep.price_fen<=${SHOP_GATE_PRICE_FEN} AND date(ep.observed_at)>=date(?))`,
+      `EXISTS (SELECT 1 FROM menu_items fm JOIN price_reports fp ON fp.menu_item_id=fm.id WHERE fm.place_id=p.id AND fm.active=1 AND ((fp.status='verified' AND fp.verification_method <> 'external_lead') OR fp.verification_method='external_lead') AND fp.price_fen<=? AND fp.price_fen<=${DISPLAY_PRICE_CAP_FEN} AND date(fp.observed_at)>=date(?))`,
     ];
     const values: unknown[] = [cutoff, maxPrice, cutoff];
+    // The 5-city public whitelist is enforced here so a bbox / "nearby"
+    // query can never surface a place from a retired city (data stays in the
+    // DB but is not publicly browsable). Legacy rows without a city remain
+    // visible for backward compatibility.
+    clauses.push(
+      `(p.city IS NULL OR p.city IN (${PUBLIC_CITY_IDS.map(() => '?').join(',')}))`,
+    );
+    values.push(...PUBLIC_CITY_IDS);
     if (filters.zoneId) {
       clauses.push('p.zone_id=?');
       values.push(filters.zoneId);
@@ -106,7 +120,7 @@ export class PlaceRepository {
     const rows = this.db
       .prepare(
         `SELECT p.*, z.name zone_name,
-      (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND ((pr.status='verified' AND pr.verification_method <> 'external_lead') OR pr.verification_method='external_lead') AND pr.price_fen<=? AND pr.price_fen<=2500 AND date(pr.observed_at)>=date(?)) minimum_price_fen,
+      (SELECT MIN(pr.price_fen) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND ((pr.status='verified' AND pr.verification_method <> 'external_lead') OR pr.verification_method='external_lead') AND pr.price_fen<=? AND pr.price_fen<=${DISPLAY_PRICE_CAP_FEN} AND date(pr.observed_at)>=date(?)) minimum_price_fen,
       COALESCE((SELECT MAX(pr.observed_at) FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.place_id=p.id AND mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND date(pr.observed_at)>=date(?)), '') freshest_observed_at
       FROM places p JOIN pilot_zones z ON z.id=p.zone_id WHERE ${clauses.join(' AND ')} ORDER BY p.id`,
       )
@@ -316,7 +330,7 @@ export class PlaceRepository {
       .all(row.id) as Array<{ name: string }>;
     const evidence = this.db
       .prepare(
-        "SELECT DISTINCT em.id,em.width,em.height FROM evidence_media em JOIN price_reports pr ON pr.id=em.price_report_id JOIN menu_items mi ON mi.id=pr.menu_item_id WHERE mi.place_id=? AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=2500 AND date(pr.observed_at)>=date('now','-180 day') AND em.visibility='public' AND em.rights_confirmed_at IS NOT NULL AND em.redaction_status IN ('completed','not_needed') ORDER BY em.created_at",
+        `SELECT DISTINCT em.id,em.width,em.height FROM evidence_media em JOIN price_reports pr ON pr.id=em.price_report_id JOIN menu_items mi ON mi.id=pr.menu_item_id WHERE mi.place_id=? AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=${DISPLAY_PRICE_CAP_FEN} AND date(pr.observed_at)>=date('now','-180 day') AND em.visibility='public' AND em.rights_confirmed_at IS NOT NULL AND em.redaction_status IN ('completed','not_needed') ORDER BY em.created_at`,
       )
       .all(row.id) as Array<{
       id: string;
@@ -329,7 +343,7 @@ export class PlaceRepository {
         `SELECT pr.menu_item_id, pr.price_fen, pr.observed_at
          FROM price_reports pr JOIN menu_items mi ON mi.id=pr.menu_item_id
          WHERE mi.place_id=? AND mi.active=1
-           AND pr.verification_method='external_lead' AND pr.price_fen<=2500
+            AND pr.verification_method='external_lead' AND pr.price_fen<=${DISPLAY_PRICE_CAP_FEN}
          ORDER BY pr.observed_at DESC, pr.created_at DESC`,
       )
       .all(row.id) as Array<{
@@ -615,7 +629,7 @@ export function dashboardSummary(db: SqliteDatabase) {
       "SELECT count(*) count FROM places WHERE record_status='active' AND business_status IN ('open','unknown')",
     ),
     validMeals: count(
-      "SELECT count(*) count FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=2500 AND date(pr.observed_at)>=date('now','-180 day')",
+      `SELECT count(*) count FROM menu_items mi JOIN price_reports pr ON pr.menu_item_id=mi.id WHERE mi.active=1 AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=${SHOP_GATE_PRICE_FEN} AND date(pr.observed_at)>=date('now','-180 day')`,
     ),
     pendingSubmissions: count(
       "SELECT count(*) count FROM submissions WHERE status IN ('pending','needs_verification')",

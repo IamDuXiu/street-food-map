@@ -60,7 +60,7 @@ describe('阶段 3 匿名投稿与媒体安全边界', () => {
         coordinateSystem: 'GCJ-02',
         placeCategory: '快餐',
         menuItemName: '套餐',
-        priceFen: 2000,
+        priceFen: 1500,
         observedAt: '2026-09-01',
         claimedVerificationMethod: 'onsite_menu',
       }),
@@ -435,7 +435,7 @@ describe('阶段 3 匿名投稿与媒体安全边界', () => {
     ).toBe('verified');
   });
 
-  it('new_price 可记录超过 25 元的涨价，但公开层仍隐藏该餐食并 supersede 旧价', () => {
+  it('new_price 可记录超过 15 元的涨价，公开层仍展示该餐食并 supersede 旧价', () => {
     const { db } = testDb();
     const result = createSubmission(
       db,
@@ -461,9 +461,9 @@ describe('阶段 3 匿名投稿与媒体安全边界', () => {
     const place = new PlaceRepository(db).get('kexing-b1-foodcourt');
     expect(
       toPublicPlace(place!, new Date('2026-09-02')).meals.some(
-        (meal) => meal.priceFen > 2500,
+        (meal) => meal.priceFen === 2600,
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('四种 approved 都映射到各自正式事实', () => {
@@ -485,7 +485,7 @@ describe('阶段 3 匿名投稿与媒体安全边界', () => {
         coordinateSystem: 'GCJ-02',
         placeCategory: '快餐',
         menuItemName: '阶段3套餐',
-        priceFen: 1800,
+        priceFen: 1500,
         observedAt: '2026-09-02',
         claimedVerificationMethod: 'onsite_menu',
       },
@@ -602,7 +602,7 @@ describe('阶段 3 匿名投稿与媒体安全边界', () => {
         coordinateSystem: 'GCJ-02',
         placeCategory: '快餐',
         menuItemName: '套餐',
-        priceFen: 1800,
+        priceFen: 1500,
         observedAt: '2026-09-02',
         claimedVerificationMethod: 'onsite_menu',
       },

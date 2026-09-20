@@ -3,6 +3,7 @@ import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { SqliteDatabase } from './db';
+import { DISPLAY_PRICE_CAP_FEN } from '../cities';
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 5;
@@ -212,7 +213,7 @@ export async function saveAdminReplacement(
 export async function readPublicMedia(db: SqliteDatabase, mediaId: string) {
   const row = db
     .prepare(
-      "SELECT em.storage_path,em.mime_type FROM evidence_media em JOIN price_reports pr ON pr.id=em.price_report_id JOIN menu_items mi ON mi.id=pr.menu_item_id JOIN places p ON p.id=mi.place_id WHERE em.id=? AND em.visibility='public' AND em.rights_confirmed_at IS NOT NULL AND em.redaction_status IN ('not_needed','completed') AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=2500 AND date(pr.observed_at)>=date('now','-180 day') AND p.record_status='active' AND p.business_status IN ('open','unknown')",
+      `SELECT em.storage_path,em.mime_type FROM evidence_media em JOIN price_reports pr ON pr.id=em.price_report_id JOIN menu_items mi ON mi.id=pr.menu_item_id JOIN places p ON p.id=mi.place_id WHERE em.id=? AND em.visibility='public' AND em.rights_confirmed_at IS NOT NULL AND em.redaction_status IN ('not_needed','completed') AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=${DISPLAY_PRICE_CAP_FEN} AND date(pr.observed_at)>=date('now','-180 day') AND p.record_status='active' AND p.business_status IN ('open','unknown')`,
     )
     .get(mediaId) as { storage_path: string; mime_type: string } | undefined;
   if (!row) throw new Error('NOT_FOUND');

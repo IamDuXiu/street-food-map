@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  DISPLAY_PRICE_CAP_FEN,
+  findPublicCityByCoords,
+  SHOP_GATE_PRICE_FEN,
+} from '../cities';
 
 export const verificationMethods = [
   'onsite_menu',
@@ -36,17 +41,11 @@ export const placeSchema = z
     tags: z.array(z.string().max(30)).max(12).default([]),
   })
   .superRefine((value, ctx) => {
-    if (value.lng < 113.6 || value.lng > 114.7)
+    if (!findPublicCityByCoords(value.lng, value.lat))
       ctx.addIssue({
         code: 'custom',
         path: ['lng'],
-        message: '经度必须在深圳范围内',
-      });
-    if (value.lat < 22.4 || value.lat > 22.9)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['lat'],
-        message: '纬度必须在深圳范围内',
+        message: '坐标必须落在公开城市范围内',
       });
   });
 export const placePatchSchema = z
@@ -175,24 +174,12 @@ export const submissionSchema = z
         zoneId: plainText(80),
         placeName: plainText(120),
         address: plainText(240),
-        lng: z
-          .number()
-          .finite()
-          .refine(
-            (value) => value >= 113.6 && value <= 114.7,
-            '经度超出深圳范围',
-          ),
-        lat: z
-          .number()
-          .finite()
-          .refine(
-            (value) => value >= 22.4 && value <= 22.9,
-            '纬度超出深圳范围',
-          ),
+        lng: z.number().finite(),
+        lat: z.number().finite(),
         coordinateSystem: z.literal('GCJ-02'),
         placeCategory: plainText(40),
         menuItemName: plainText(120),
-        priceFen: z.number().int().positive().max(2500),
+        priceFen: z.number().int().positive().max(SHOP_GATE_PRICE_FEN),
         observedAt: z.string().date(),
         claimedVerificationMethod: z.enum(verificationMethods),
         menuCategory: optionalPlainText(40),
@@ -207,7 +194,7 @@ export const submissionSchema = z
         placeId: plainText(120),
         menuItemId: z.string().min(1).max(120).optional(),
         newMenuItemName: optionalPlainText(120),
-        priceFen: z.number().int().positive().max(100000),
+        priceFen: z.number().int().positive().max(DISPLAY_PRICE_CAP_FEN),
         observedAt: z.string().date(),
         claimedVerificationMethod: z.enum(verificationMethods),
         note: optionalPlainText(500),
@@ -269,6 +256,15 @@ export const submissionSchema = z
         code: 'custom',
         message: '该纠错字段不接受餐食 ID',
         path: ['menuItemId'],
+      });
+    if (
+      value.type === 'new_place' &&
+      !findPublicCityByCoords(value.lng, value.lat)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: '坐标必须落在公开城市范围内',
+        path: ['lng'],
       });
   });
 export type SubmissionPayload = z.infer<typeof submissionSchema>;

@@ -1,5 +1,10 @@
 import type { DbPlace } from './repository';
 import type { Place } from '../types';
+import {
+  clampDisplayPriceFen,
+  DISPLAY_PRICE_CAP_FEN,
+  SHOP_GATE_PRICE_FEN,
+} from '../cities';
 
 export interface PublicPlaceDto extends Place {
   zoneName: string;
@@ -13,9 +18,10 @@ export interface PublicPlaceDto extends Place {
 export function toPublicPlace(
   place: DbPlace,
   now = new Date(),
-  maxPriceFen = 2500,
+  maxPriceFen = DISPLAY_PRICE_CAP_FEN,
 ): PublicPlaceDto {
   const cutoff = now.getTime() - 180 * 86400000;
+  const priceCap = clampDisplayPriceFen(maxPriceFen);
   return {
     id: place.id,
     zoneId: place.zoneId,
@@ -31,7 +37,7 @@ export function toPublicPlace(
     note: place.note,
     meals: place.meals.filter(
       (meal) =>
-        meal.priceFen <= Math.min(maxPriceFen, 2500) &&
+        meal.priceFen <= priceCap &&
         new Date(meal.observedAt).getTime() >= cutoff,
     ),
     ...(place.sources ? { sources: place.sources } : {}),
@@ -52,7 +58,8 @@ export function publicPlaceIsEligible(place: DbPlace, now = new Date()) {
     ['open', 'unknown'].includes(place.businessStatus) &&
     place.meals.some(
       (meal) =>
-        meal.priceFen <= 2500 && new Date(meal.observedAt).getTime() >= cutoff,
+        meal.priceFen <= SHOP_GATE_PRICE_FEN &&
+        new Date(meal.observedAt).getTime() >= cutoff,
     )
   );
 }

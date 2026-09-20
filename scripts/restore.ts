@@ -7,8 +7,8 @@ import { closeDatabase, databasePath, migrateDatabase } from '../lib/server/db';
 import { createBackup } from './backup';
 
 const CONFIRM = 'RESTORE-BUDGET-MAP';
-const CURRENT_SCHEMA = 10;
-const SUPPORTED_BACKUP_SCHEMAS = [4, 5, 6, 7, 8, 9, 10] as const;
+const CURRENT_SCHEMA = 11;
+const SUPPORTED_BACKUP_SCHEMAS = [4, 5, 6, 7, 8, 9, 10, 11] as const;
 type RestoreOptions = {
   databaseFile?: string;
   uploadsDir?: string;

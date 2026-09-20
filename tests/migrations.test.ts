@@ -22,6 +22,7 @@ const migrationFiles = [
   '008_regions.sql',
   '009_creator_sources.sql',
   '010_place_city.sql',
+  '011_web_lead_notes.sql',
 ];
 
 afterEach(() => {
@@ -111,19 +112,19 @@ function makeTarget(root: string) {
 }
 
 describe('database migration reconciliation', () => {
-  it('fresh databases reach schema 10 with the matched column and delete trigger', () => {
+  it('fresh databases reach schema 11 with the matched column and delete trigger', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-fresh-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'fresh.sqlite'));
     const objects = schemaObjects(db);
-    expect(objects.version).toBe(10);
+    expect(objects.version).toBe(11);
     expect(objects.matchedColumn).toBe(true);
     expect(objects.matchedForeignKey).toBe(true);
     expect(objects.trigger?.name).toBe('source_leads_referenced_delete');
     db.close();
   });
 
-  it('fresh schema 10 adds region catalog, creator-source and city columns', () => {
+  it('fresh schema 11 adds region catalog, creator-source, city and review_notes columns', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-creator-'));
     roots.push(root);
     const db = openDatabase(path.join(root, 'creator.sqlite'));
@@ -153,6 +154,7 @@ describe('database migration reconciliation', () => {
         'city',
         'play_count',
         'public_visibility',
+        'review_notes',
       ]),
     );
     const zoneColumns = (
@@ -202,12 +204,12 @@ describe('database migration reconciliation', () => {
     const missingDb = openDatabase(missing);
     const existingDb = openDatabase(existing);
     expect(schemaObjects(missingDb)).toMatchObject({
-      version: 10,
+      version: 11,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     expect(schemaObjects(existingDb)).toMatchObject({
-      version: 10,
+      version: 11,
       matchedColumn: true,
       matchedForeignKey: true,
     });
@@ -215,7 +217,7 @@ describe('database migration reconciliation', () => {
     existingDb.close();
   });
 
-  it('opening schema 10 again is idempotent and preserves key schema objects', () => {
+  it('opening schema 11 again is idempotent and preserves key schema objects', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-repeat-'));
     roots.push(root);
     const file = path.join(root, 'repeat.sqlite');
@@ -257,7 +259,7 @@ describe('database migration reconciliation', () => {
     db.close();
   });
 
-  it('restores a schema-4 archive by migrating staging to schema 10', async () => {
+  it('restores a schema-4 archive by migrating staging to schema 11', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema4-'));
     roots.push(root);
     const legacy = path.join(root, 'legacy.sqlite');
@@ -271,18 +273,18 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 10,
+      version: 11,
       matchedColumn: true,
       matchedForeignKey: true,
     });
     restored.close();
   });
 
-  it('schema-10 backup round-trip keeps the reconciled schema objects', async () => {
+  it('schema-11 backup round-trip keeps the reconciled schema objects', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-schema9-'));
     roots.push(root);
     const source = openDatabase();
-    expect(schemaObjects(source)).toMatchObject({ version: 10, matchedColumn: true });
+    expect(schemaObjects(source)).toMatchObject({ version: 11, matchedColumn: true });
     const archive = await createBackup(path.join(root, 'backups'));
     const target = makeTarget(root);
     await restoreBackup(archive, 'RESTORE-BUDGET-MAP', {
@@ -292,7 +294,7 @@ describe('database migration reconciliation', () => {
     });
     const restored = new Database(target);
     expect(schemaObjects(restored)).toMatchObject({
-      version: 10,
+      version: 11,
       matchedColumn: true,
       matchedForeignKey: true,
     });

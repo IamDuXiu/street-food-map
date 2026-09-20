@@ -9,9 +9,9 @@ test('用户可以筛选、打开地点详情并导航', async ({ page }) => {
   await expect(
     page.locator('.results-panel a.card-link').first(),
   ).toBeVisible();
-  const budget25 = page.getByRole('group', { name: '最高价格' }).getByRole('button', { name: '≤ ¥25' });
-  await budget25.click();
-  await expect(budget25).toHaveAttribute('aria-pressed', 'true');
+  const cheapOnly = page.getByRole('group', { name: '餐食价格' }).getByRole('button', { name: '仅看 ≤ ¥15' });
+  await cheapOnly.click();
+  await expect(cheapOnly).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /选择区域/ }).click();
   await page.getByRole('navigation', { name: '深圳市行政区' }).getByRole('button', { name: /南山区/ }).click();
   await page.getByRole('button', { name: /科技园.*已有饭签/ }).click();
@@ -64,12 +64,12 @@ test('地图和列表可互相选择，定位拒绝时仍可浏览', async ({ pa
 
 test('用户端筛选状态在详情返回后可恢复', async ({ page }) => {
   await page.goto('/');
-  const budget25 = page.getByRole('group', { name: '最高价格' }).getByRole('button', { name: '≤ ¥25' });
+  const cheapOnly = page.getByRole('group', { name: '餐食价格' }).getByRole('button', { name: '仅看 ≤ ¥15' });
   const tag = page.getByRole('combobox', { name: '按条件或标签筛选' });
   const sort = page.getByRole('combobox', { name: '结果排序' });
   const search = page.getByRole('textbox', { name: '搜店名或餐食' });
 
-  await budget25.click();
+  await cheapOnly.click();
   await tag.click();
   await page.locator('.ui-select-menu:not([hidden]) [role="option"][data-value="有肉有菜"]').click();
   await sort.click();
@@ -85,7 +85,7 @@ test('用户端筛选状态在详情返回后可恢复', async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 
   await expect(search).toHaveValue('科兴');
-  await expect(budget25).toHaveAttribute('aria-pressed', 'true');
+  await expect(cheapOnly).toHaveAttribute('aria-pressed', 'true');
   await expect(tag).toHaveAttribute('data-value', '有肉有菜');
   await expect(sort).toHaveAttribute('data-value', 'freshness');
   await expect(card).toBeVisible();
@@ -165,7 +165,7 @@ test('匿名投稿可以完成真实提交并到达成功页', async ({ page }) 
   await page.getByLabel('地点名称').fill('测试饭点');
   await page.getByLabel('地址', { exact: true }).fill('深圳大学西门测试地址');
   await page.getByLabel('具体餐食').fill('测试套餐');
-  await page.getByLabel('价格（元）').fill('18');
+  await page.getByLabel('价格（元）').fill('12');
   await page.locator('input[type=file]').setInputFiles({
     name: 'proof.png',
     mimeType: 'image/png',
@@ -309,7 +309,7 @@ test('用户端空结果可恢复，筛选入口支持键盘焦点', async ({ pa
   await expect(region).toBeFocused();
   await page.getByRole('textbox', { name: '搜店名或餐食' }).fill('绝不会存在的饭点');
   await expect(page.getByRole('heading', { name: '这组筛选暂时没饭' })).toBeVisible();
-  await page.getByRole('button', { name: '看 ¥25 内全部' }).click();
+  await page.getByRole('button', { name: '看全部餐食' }).click();
   await expect(page.getByRole('heading', { name: /\d+ 个结果/ })).toBeVisible();
 });
 

@@ -1,8 +1,12 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openDatabase, type SqliteDatabase } from '../lib/server/db';
+import { CITIES, publicCityRank } from '../lib/cities';
 import { SHENZHEN_CITY, SHENZHEN_DISTRICTS, type ShenzhenRegion } from '../lib/regions';
-import { PEARL_RIVER_DISTRICTS } from '../lib/region-districts';
+import {
+  NATIONAL_CITY_DISTRICTS,
+  PEARL_RIVER_DISTRICTS,
+} from '../lib/region-districts';
 
 export type RegionSeedLevel = 'city' | 'district' | 'business_area';
 
@@ -18,25 +22,25 @@ export interface RegionSeedRecord {
   sortOrder: number;
 }
 
-const PRD_CITY_SEEDS: RegionSeedRecord[] = [
-  ['guangzhou', '广州市', 113.264, 23.129, [112.95, 22.4, 113.74, 23.95], 10],
-  ['foshan', '佛山市', 113.122, 23.028, [112.38, 22.63, 113.3, 23.57], 10],
-  ['dongguan', '东莞市', 113.751, 23.02, [113.45, 22.65, 114.15, 23.15], 10],
-  ['zhongshan', '中山市', 113.392, 22.517, [113.13, 22.2, 113.6, 22.75], 10],
-  ['zhuhai', '珠海市', 113.576, 22.271, [113.05, 21.85, 114.15, 22.55], 10],
-  ['huizhou', '惠州市', 114.416, 23.111, [113.85, 22.55, 115.35, 23.95], 9],
-  ['jiangmen', '江门市', 113.081, 22.579, [111.95, 21.7, 113.65, 23.1], 9],
-  ['zhaoqing', '肇庆市', 112.465, 23.047, [111.35, 22.75, 112.85, 24.25], 9],
-].map(([id, name, centerLng, centerLat, bbox, zoom], index) => ({
-  id: id as string,
+function citySortOrder(id: string): number {
+  const rank = publicCityRank(id);
+  if (Number.isFinite(rank)) return rank;
+  const index = CITIES.findIndex((city) => city.id === id);
+  return 20 + (index < 0 ? 0 : index);
+}
+
+const CITY_SEEDS: RegionSeedRecord[] = CITIES.filter(
+  (city) => city.id !== 'shenzhen',
+).map((city) => ({
+  id: city.id,
   parentId: '',
-  name: name as string,
+  name: city.full,
   level: 'city' as const,
-  centerLng: centerLng as number,
-  centerLat: centerLat as number,
-  bbox: bbox as [number, number, number, number],
-  zoom: zoom as number,
-  sortOrder: index + 1,
+  centerLng: city.centerLng,
+  centerLat: city.centerLat,
+  bbox: city.bbox,
+  zoom: city.zoom,
+  sortOrder: citySortOrder(city.id),
 }));
 
 function toRecord(
@@ -60,27 +64,29 @@ function toRecord(
 }
 
 export function regionSeedRecords(): RegionSeedRecord[] {
-  const records: RegionSeedRecord[] = [toRecord(SHENZHEN_CITY, '', 0)];
+  const shenzhen = toRecord(SHENZHEN_CITY, '', citySortOrder('shenzhen'));
+  const records: RegionSeedRecord[] = [shenzhen];
   SHENZHEN_DISTRICTS.forEach((district, districtIndex) => {
     records.push(toRecord(district, SHENZHEN_CITY.id, districtIndex));
     district.businessAreas.forEach((area, areaIndex) => {
       records.push(toRecord(area, district.id, areaIndex));
     });
   });
-  const cityDistricts: RegionSeedRecord[] = PEARL_RIVER_DISTRICTS.map(
-    (district) => ({
-      id: district.id,
-      parentId: district.cityId,
-      name: district.name,
-      level: 'district' as const,
-      centerLng: district.centerLng,
-      centerLat: district.centerLat,
-      bbox: district.bbox,
-      zoom: district.zoom,
-      sortOrder: district.sortOrder,
-    }),
-  );
-  return records.concat(PRD_CITY_SEEDS, cityDistricts);
+  const cityDistricts: RegionSeedRecord[] = [
+    ...PEARL_RIVER_DISTRICTS,
+    ...NATIONAL_CITY_DISTRICTS,
+  ].map((district) => ({
+    id: district.id,
+    parentId: district.cityId,
+    name: district.name,
+    level: 'district' as const,
+    centerLng: district.centerLng,
+    centerLat: district.centerLat,
+    bbox: district.bbox,
+    zoom: district.zoom,
+    sortOrder: district.sortOrder,
+  }));
+  return records.concat(CITY_SEEDS, cityDistricts);
 }
 
 export function seedRegions(db: SqliteDatabase): number {

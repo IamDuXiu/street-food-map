@@ -93,10 +93,10 @@ describe('创作者内容导入预览', () => {
     db.close();
   });
 
-  it('超过 25 元或坐标越界被拒绝', async () => {
+  it('超过 sanity 上限或坐标越界被拒绝', async () => {
     const db = tempDb();
     const result = await previewCreatorImport(db, [
-      { ...base, priceYuan: 30, lng: 113.32, lat: 23.12 },
+      { ...base, priceYuan: 201, lng: 113.32, lat: 23.12 },
       { ...base, lng: 120, lat: 30 },
     ]);
     expect(result.valid).toBe(false);

@@ -25,7 +25,8 @@
     "phase5:check": "node scripts/phase5-check.mjs",
     "seed:candidates": "tsx scripts/seed-candidate-pool.ts",
     "seed:regions": "tsx scripts/seed-regions.ts",
-    "collect:creators": "tsx scripts/creator-collect.ts"
+    "collect:creators": "tsx scripts/creator-collect.ts",
+    "collect:web": "tsx scripts/web-collect.ts"
   },
   "dependencies": {
     "better-sqlite3": "11.10.0",

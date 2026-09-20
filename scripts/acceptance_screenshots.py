@@ -43,7 +43,7 @@ def run(base_url: str, output_dir: Path) -> list[dict[str, object]]:
             wait_for_home(page, base_url)
             body_text = page.locator("body").inner_text()
             expect(page.get_by_role("textbox", name="搜店名或餐食")).to_be_visible()
-            expect(page.get_by_role("button", name="≤ ¥25", exact=True)).to_be_visible()
+            expect(page.get_by_role("button", name="仅看 ≤ ¥15", exact=True)).to_be_visible()
             expect(page.get_by_role("combobox", name="按条件或标签筛选")).to_be_visible()
             expect(page.get_by_role("combobox", name="结果排序")).to_be_visible()
             expect(page.locator(".results-panel a.card-link").first).to_be_visible()
@@ -53,8 +53,8 @@ def run(base_url: str, output_dir: Path) -> list[dict[str, object]]:
                 path=str(output_dir / f"home-{width}.png"), full_page=True
             )
 
-            budget = page.get_by_role("group", name="最高价格").get_by_role(
-                "button", name="≤ ¥25", exact=True
+            budget = page.get_by_role("group", name="餐食价格").get_by_role(
+                "button", name="仅看 ≤ ¥15", exact=True
             )
             budget.click()
             expect(budget).to_have_attribute("aria-pressed", "true")

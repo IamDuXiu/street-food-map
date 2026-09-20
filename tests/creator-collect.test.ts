@@ -37,15 +37,17 @@ const sampleVideo: RawCreatorVideo = {
 };
 
 describe('标题文本抽取', () => {
-  it('抽取金额并只保留 ≤25 元的最低值', () => {
+  it('抽取金额并只保留 ≤15 元的最低值', () => {
     expect(extractPrices('广州6元自助餐，人均15吃到撑')).toEqual([6, 15]);
     expect(pickBudgetPrice('广州6元自助餐，人均15吃到撑')).toBe(6);
     expect(pickBudgetPrice('128元豪华自助')).toBeUndefined();
     expect(pickBudgetPrice('肇庆0元旅游攻略')).toBeUndefined();
   });
 
-  it('识别珠三角城市并排除歧义地名', () => {
+  it('识别公开城市并排除歧义地名', () => {
     expect(detectCity('广州6元自助餐')?.id).toBe('guangzhou');
+    expect(detectCity('北京10元盒饭')?.id).toBe('beijing');
+    expect(detectCity('杭州大学城便宜快餐')?.id).toBe('hangzhou');
     expect(detectCity('中山最大城中村，快餐10元')?.id).toBe('zhongshan');
     expect(detectCity('广州中山八路附近快餐')?.id).toBe('guangzhou');
     expect(detectCity('厦门3元面线糊')).toBeUndefined();

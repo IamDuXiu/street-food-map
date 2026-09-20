@@ -2,6 +2,13 @@ import type { SqliteDatabase } from './db';
 import { newId } from './seed';
 import { recordAudit } from './audit';
 import {
+  isPublicCity,
+  NATIONAL_BOUNDS,
+  PUBLIC_CITY_IDS,
+  publicCityRank,
+  SHOP_GATE_PRICE_FEN,
+} from '../cities';
+import {
   type CoverageStatus,
   type RegionCityOption,
   type RegionLevel,
@@ -43,14 +50,15 @@ function eligiblePoints(db: SqliteDatabase): Array<{ lng: number; lat: number }>
       `SELECT p.lng lng, p.lat lat
        FROM places p JOIN pilot_zones z ON z.id=p.zone_id
        WHERE p.record_status='active' AND p.business_status IN ('open','unknown') AND z.active=1
+         AND (p.city IS NULL OR p.city IN (${PUBLIC_CITY_IDS.map(() => '?').join(',')}))
          AND EXISTS (
            SELECT 1 FROM menu_items em JOIN price_reports ep ON ep.menu_item_id=em.id
            WHERE em.place_id=p.id AND em.active=1
              AND ((ep.status='verified' AND ep.verification_method <> 'external_lead')
                   OR ep.verification_method='external_lead')
-             AND ep.price_fen<=2500 AND date(ep.observed_at)>=date('now','-180 day'))`,
+              AND ep.price_fen<=${SHOP_GATE_PRICE_FEN} AND date(ep.observed_at)>=date('now','-180 day'))`,
     )
-    .all() as Array<{ lng: number; lat: number }>;
+    .all(...PUBLIC_CITY_IDS) as Array<{ lng: number; lat: number }>;
 }
 
 function bboxHasPoint(
@@ -92,20 +100,35 @@ function toRegion(
   };
 }
 
-export function listRegionCities(db: SqliteDatabase): RegionCityOption[] {
-  const rows = db
-    .prepare(
-      "SELECT * FROM regions WHERE level='city' AND active=1 ORDER BY sort_order, name",
-    )
-    .all() as RegionRow[];
-  return rows.map((row) => ({
+function toCityOption(row: RegionRow): RegionCityOption {
+  return {
     id: row.id,
     label: row.name,
     centerLng: row.center_lng,
     centerLat: row.center_lat,
     bbox: [row.bbox_west, row.bbox_south, row.bbox_east, row.bbox_north],
     zoom: row.zoom,
-  }));
+  };
+}
+
+function publicCityRows(rows: RegionRow[]): RegionRow[] {
+  return rows
+    .filter((row) => row.level === 'city' && isPublicCity(row.id))
+    .sort(
+      (a, b) =>
+        publicCityRank(a.id) - publicCityRank(b.id) ||
+        a.sort_order - b.sort_order ||
+        a.name.localeCompare(b.name),
+    );
+}
+
+export function listRegionCities(db: SqliteDatabase): RegionCityOption[] {
+  const rows = db
+    .prepare(
+      "SELECT * FROM regions WHERE level='city' AND active=1 ORDER BY sort_order, name",
+    )
+    .all() as RegionRow[];
+  return publicCityRows(rows).map(toCityOption);
 }
 
 /**
@@ -120,7 +143,7 @@ export function buildRegionCatalog(
   const rows = db
     .prepare('SELECT * FROM regions WHERE active=1 ORDER BY sort_order, name')
     .all() as RegionRow[];
-  const cityRows = rows.filter((row) => row.level === 'city');
+  const cityRows = publicCityRows(rows);
   if (!cityRows.length) {
     warnMissingSeed();
     return null;
@@ -149,14 +172,7 @@ export function buildRegionCatalog(
   return {
     city: toRegion(cityRow, points),
     districts,
-    cities: cityRows.map((row) => ({
-      id: row.id,
-      label: row.name,
-      centerLng: row.center_lng,
-      centerLat: row.center_lat,
-      bbox: [row.bbox_west, row.bbox_south, row.bbox_east, row.bbox_north],
-      zoom: row.zoom,
-    })),
+    cities: cityRows.map(toCityOption),
   };
 }
 
@@ -207,12 +223,7 @@ export interface AdminRegionRow {
   active: boolean;
 }
 
-const PEARL_RIVER_BOUNDS = {
-  west: 111.3,
-  south: 21.7,
-  east: 115.4,
-  north: 24.3,
-};
+const CITY_BOUNDS = NATIONAL_BOUNDS;
 
 function rowById(db: SqliteDatabase, id: string): RegionRow | undefined {
   return db.prepare('SELECT * FROM regions WHERE id=?').get(id) as
@@ -247,12 +258,12 @@ function assertBbox(input: {
     throw new RegionError('REGION_CENTER_OUTSIDE', '中心点必须落在 bbox 内');
   if (input.level === 'city') {
     if (
-      west < PEARL_RIVER_BOUNDS.west ||
-      east > PEARL_RIVER_BOUNDS.east ||
-      south < PEARL_RIVER_BOUNDS.south ||
-      north > PEARL_RIVER_BOUNDS.north
+      west < CITY_BOUNDS.west ||
+      east > CITY_BOUNDS.east ||
+      south < CITY_BOUNDS.south ||
+      north > CITY_BOUNDS.north
     )
-      throw new RegionError('REGION_OUT_OF_RANGE', '城市范围超出珠三角');
+      throw new RegionError('REGION_OUT_OF_RANGE', '城市范围超出收录范围');
     return;
   }
   const city = input.city;

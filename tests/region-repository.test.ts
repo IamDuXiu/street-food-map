@@ -44,22 +44,18 @@ function addPublicPlace(
 }
 
 describe('区域目录 DB 仓储', () => {
-  it('从 DB 构建深圳目录并列出珠三角 9 市', () => {
+  it('从 DB 构建深圳目录并只列出公开 5 城', () => {
     const db = tempDb();
     seedRegions(db);
     const catalog = buildRegionCatalog(db, 'shenzhen')!;
     expect(catalog.city.label).toBe('深圳市');
     expect(catalog.districts).toHaveLength(10);
     expect(listRegionCities(db).map((city) => city.label)).toEqual([
-      '深圳市',
+      '北京市',
+      '上海市',
       '广州市',
-      '佛山市',
-      '东莞市',
-      '中山市',
-      '珠海市',
-      '惠州市',
-      '江门市',
-      '肇庆市',
+      '深圳市',
+      '杭州市',
     ]);
     expect(catalog.districts.every((d) => d.coverage === 'planned')).toBe(true);
     db.close();
@@ -89,9 +85,10 @@ describe('区域目录 DB 仓储', () => {
     expect(catalog.city.label).toBe('广州市');
     expect(catalog.districts).toHaveLength(11);
     expect(catalog.districts.map((d) => d.label)).toContain('天河区');
-    expect(catalog.cities).toHaveLength(9);
-    const dongguan = buildRegionCatalog(db, 'dongguan')!;
-    expect(dongguan.districts).toEqual([]);
+    expect(catalog.cities).toHaveLength(5);
+    const beijing = buildRegionCatalog(db, 'beijing')!;
+    expect(beijing.city.label).toBe('北京市');
+    expect(beijing.districts).toHaveLength(16);
     db.close();
   });
 
@@ -112,6 +109,6 @@ describe('区域目录 DB 仓储', () => {
       data: { regions: { city: { label: string }; cities: unknown[] } };
     };
     expect(body.data.regions.city.label).toBe('广州市');
-    expect(body.data.regions.cities).toHaveLength(9);
+    expect(body.data.regions.cities).toHaveLength(5);
   });
 });

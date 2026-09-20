@@ -1152,13 +1152,13 @@ function buildCandidatePreview(
         '请选择正式核验方式',
       );
     const price = Number(row.price_yuan);
-    if (Number.isFinite(price) && (price <= 0 || price > 25))
+    if (Number.isFinite(price) && (price <= 0 || price > 200))
       addError(
         errors,
         index,
         item.id,
         'price_yuan',
-        '价格必须大于 0 且不超过 25 元',
+        '价格必须大于 0 且不超过 200 元',
       );
     if (
       typeof row.observed_date === 'string' &&

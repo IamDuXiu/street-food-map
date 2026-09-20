@@ -32,7 +32,7 @@ describe('采集结果端到端导入', () => {
       platform: 'bilibili',
       creatorName: '粤城旧事',
       contentUrl: 'https://www.bilibili.com/video/BV1jRYL64E3G/',
-      contentTitle: '老广食广州丨宏兴茶餐厅丨番禺人均20元！',
+      contentTitle: '老广食广州丨宏兴茶餐厅丨番禺人均12元！',
     });
     expect(record).toBeDefined();
 

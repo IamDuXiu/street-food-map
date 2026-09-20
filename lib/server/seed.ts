@@ -12,7 +12,7 @@ export function seedDemo(db: SqliteDatabase) {
     TAGS.forEach((name) => tag.run(name, name));
     const place = db.prepare('INSERT OR IGNORE INTO places(id,zone_id,city,name,normalized_name,address,lng,lat,category,access_type,access_note,business_status,record_status,opening_hours_note,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     const menu = db.prepare('INSERT OR IGNORE INTO menu_items(id,place_id,name,normalized_name,category,description,active,created_at,updated_at) VALUES (?,?,?,?,?,?,1,?,?)');
-    const price = db.prepare('INSERT OR IGNORE INTO price_reports(id,menu_item_id,price_fen,observed_at,verification_method,status,reviewed_at,created_at) VALUES (?,?,?,?,?,?,?,?)');
+    const price = db.prepare('INSERT INTO price_reports(id,menu_item_id,price_fen,observed_at,verification_method,status,reviewed_at,created_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET price_fen=excluded.price_fen,observed_at=excluded.observed_at,verification_method=excluded.verification_method,status=excluded.status,reviewed_at=excluded.reviewed_at');
     const placeTag = db.prepare('INSERT OR IGNORE INTO place_tags(place_id,tag_id) VALUES (?,?)');
     for (const item of PLACES) {
       place.run(item.id, item.zoneId, 'shenzhen', item.name, normalize(item.name), item.address, item.lng, item.lat, item.category, item.access.includes('公开') ? 'public' : 'identity_restricted', item.access, 'open', 'active', item.note, now, now);

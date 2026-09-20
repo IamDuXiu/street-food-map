@@ -41,7 +41,7 @@ type SortMode = 'distance' | 'price' | 'freshness';
 type MobileListState = 'peek' | 'half' | 'full';
 
 export function HomeClient() {
-  const [maxPrice, setMaxPrice] = useState(20);
+  const [cheapOnly, setCheapOnly] = useState(true);
   const [regionId, setRegionId] = useState(DEFAULT_REGION);
   const [cityId, setCityId] = useState(DEFAULT_REGION);
   const [tag, setTag] = useState('all');
@@ -85,7 +85,7 @@ export function HomeClient() {
       const raw = window.sessionStorage.getItem('meal-map-home-state');
       if (raw) {
         const saved = JSON.parse(raw) as Partial<{
-          maxPrice: number;
+          cheapOnly: boolean;
           regionId: string;
           cityId: string;
           tag: string;
@@ -93,7 +93,7 @@ export function HomeClient() {
           sort: SortMode;
           selectedId: string | null;
         }>;
-        if ([15, 20, 25].includes(saved.maxPrice ?? 0)) setMaxPrice(saved.maxPrice!);
+        if (typeof saved.cheapOnly === 'boolean') setCheapOnly(saved.cheapOnly);
         if (saved.cityId) setCityId(saved.cityId);
         if (saved.regionId && saved.regionId !== 'nearby') setRegionId(saved.regionId);
         if (saved.tag) setTag(saved.tag);
@@ -115,7 +115,7 @@ export function HomeClient() {
     if (!restoredRef.current || typeof window === 'undefined') return;
     try {
       window.sessionStorage.setItem('meal-map-home-state', JSON.stringify({
-        maxPrice,
+        cheapOnly,
         cityId,
         regionId: regionId === 'nearby' ? cityId : regionId,
         tag,
@@ -126,7 +126,7 @@ export function HomeClient() {
     } catch {
       // Private browsing or a disabled storage policy should not block browsing.
     }
-  }, [maxPrice, cityId, regionId, tag, query, sort, selectedId]);
+  }, [cheapOnly, cityId, regionId, tag, query, sort, selectedId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,7 +144,7 @@ export function HomeClient() {
   useEffect(() => {
     const controller = new AbortController();
     const params = new URLSearchParams({
-      maxPriceFen: String(maxPrice * 100),
+      maxPriceFen: String(cheapOnly ? 1500 : 20000),
       sort: effectiveSort,
     });
     if (tag !== 'all') params.set('tag', tag);
@@ -179,7 +179,7 @@ export function HomeClient() {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [maxPrice, regionId, cityId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion, selectedRegion]);
+  }, [cheapOnly, regionId, cityId, tag, debouncedQuery, origin, requestBbox, effectiveSort, requestVersion, selectedRegion]);
 
   function chooseRegion(region: ShenzhenRegion) {
     setRegionId(region.id);
@@ -226,7 +226,7 @@ export function HomeClient() {
   }
 
   function resetFilters() {
-    setMaxPrice(20);
+    setCheapOnly(true);
     setTag('all');
     setQuery('');
     setSort('price');
@@ -235,7 +235,7 @@ export function HomeClient() {
   }
 
   const activeChips: Array<{ key: string; label: string; onRemove: () => void }> = [];
-  if (maxPrice !== 25) activeChips.push({ key: 'price', label: `预算 ≤ ¥${maxPrice}`, onRemove: () => setMaxPrice(25) });
+  if (cheapOnly) activeChips.push({ key: 'price', label: '仅看 ≤ ¥15 餐食', onRemove: () => setCheapOnly(false) });
   if (tag !== 'all') activeChips.push({ key: 'tag', label: `标签 · ${tag}`, onRemove: () => setTag('all') });
   if (query.trim()) activeChips.push({ key: 'query', label: `关键词 · ${query.trim()}`, onRemove: () => setQuery('') });
   if (regionId !== cityId) activeChips.push({ key: 'region', label: `区域 · ${regionId === 'nearby' ? '我的附近' : (selectedRegion?.label ?? regionId)}`, onRemove: () => { setRegionId(cityId); setOrigin(undefined); setMovedBbox(undefined); setSelectedId(null); if (sort === 'distance') setSort('price'); } });
@@ -252,9 +252,10 @@ export function HomeClient() {
           <button type="button" className={styles.resetButton} onClick={resetFilters}>重置</button>
         </div>
         <div className={styles.filterRow}>
-          <span className={styles.filterLabel}>预算</span>
-          <div className={styles.budgetChips} role="group" aria-label="最高价格">
-            {[15, 20, 25].map((price) => <button key={price} type="button" className={maxPrice === price ? styles.budgetChipActive : styles.budgetChip} aria-pressed={maxPrice === price} onClick={() => setMaxPrice(price)}>≤ ¥{price}</button>)}
+          <span className={styles.filterLabel}>餐食</span>
+          <div className={styles.budgetChips} role="group" aria-label="餐食价格">
+            <button type="button" className={cheapOnly ? styles.budgetChipActive : styles.budgetChip} aria-pressed={cheapOnly} onClick={() => setCheapOnly(true)}>仅看 ≤ ¥15</button>
+            <button type="button" className={!cheapOnly ? styles.budgetChipActive : styles.budgetChip} aria-pressed={!cheapOnly} onClick={() => setCheapOnly(false)}>全部餐食</button>
           </div>
           <label className={styles.filterControl}>条件<Select variant="bare" value={tag} onChange={setTag} ariaLabel="按条件或标签筛选" options={[{ value: 'all', label: '全部' }, ...availableTags.map((item) => ({ value: item, label: item }))]} /></label>
           <label className={styles.filterControl}>排序<Select variant="bare" value={sort} onChange={(next) => setSort(next as SortMode)} ariaLabel="结果排序" options={[{ value: 'price', label: '最低价优先' }, { value: 'freshness', label: '最近核验' }, { value: 'distance', label: origin ? '附近优先' : '附近优先（先定位）', disabled: !origin }]} /></label>
@@ -293,7 +294,7 @@ export function HomeClient() {
             <b>查看详情 ↗</b>
           </Link>}
           {error && <Notice tone="error" className={styles.dataNotice}><span>{error}</span><button type="button" onClick={retry}>重试</button></Notice>}
-          {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><button type="button" onClick={() => { setMaxPrice(25); setTag('all'); setQuery(''); }}>看 ¥25 内全部</button></div> : null}
+           {!loading && !error && places.length ? <div className={styles.placeList}>{places.map((place) => <PlaceCard key={place.id} place={place} selected={selected?.id === place.id} onSelect={setSelectedId} distanceLabel={regionId === 'nearby' ? '距你' : '距中心'} />)}</div> : !loading && !error && isPlannedRegion ? <div className={styles.emptyState}><span className={styles.emptyIcon}>＋</span><h3>这里还没有真实饭签</h3><Link className={styles.emptyLink} href="/submit">提交这个区域的第一条 ↗</Link></div> : !loading && !error ? <div className={styles.emptyState}><span className={styles.emptyIcon}>∅</span><h3>这组筛选暂时没饭</h3><button type="button" onClick={() => { setCheapOnly(false); setTag('all'); setQuery(''); }}>看全部餐食</button></div> : null}
           <p className={styles.listNote}>价格来自现场菜单、公开菜单或近期用户核验。<Link href="/about">了解核验规则 ↗</Link></p>
         </section>
         <MapStage places={places} viewport={viewport} selectedId={selected?.id ?? selectedId} onSelect={(id) => { setSelectedId(id); setMobileListState('peek'); }} onSearchViewport={(nextBbox) => setMovedBbox(nextBbox)} userLocation={regionId === 'nearby' ? origin : undefined} />

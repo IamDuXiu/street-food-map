@@ -62,7 +62,7 @@ export async function PATCH(
       media.price_report_id &&
       db
         .prepare(
-          "SELECT 1 FROM price_reports pr JOIN menu_items mi ON mi.id=pr.menu_item_id JOIN places p ON p.id=mi.place_id WHERE pr.id=? AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=2500 AND p.record_status='active' AND p.business_status IN ('open','unknown')",
+          "SELECT 1 FROM price_reports pr JOIN menu_items mi ON mi.id=pr.menu_item_id JOIN places p ON p.id=mi.place_id WHERE pr.id=? AND pr.status='verified' AND pr.verification_method <> 'external_lead' AND pr.price_fen<=20000 AND p.record_status='active' AND p.business_status IN ('open','unknown')",
         )
         .get(media.price_report_id);
     if (

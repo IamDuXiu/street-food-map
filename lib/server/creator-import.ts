@@ -11,16 +11,19 @@ import { duplicateCandidates } from './services';
 import { addEntitySource } from './sources';
 import { geocodeAddress, isPlaceholderAddress, type GeocodeCandidate } from './geocode';
 import { distanceMeters } from '../geo';
+import {
+  findCity,
+  IMPORT_PRICE_YUAN_MAX,
+  coordsInBbox,
+} from '../cities';
 
-export const PEARL_RIVER_LNG_RANGE = [111.3, 115.4] as const;
-export const PEARL_RIVER_LAT_RANGE = [21.7, 24.3] as const;
 const PLACE_MERGE_DISTANCE_METERS = 150;
 
 export const creatorImportRecordSchema = z
   .object({
     storeName: z.string().trim().min(1).max(120),
     mealName: z.string().trim().min(1).max(120),
-    priceYuan: z.number().positive().max(25),
+    priceYuan: z.number().positive().max(IMPORT_PRICE_YUAN_MAX),
     address: z.string().trim().min(1).max(240),
     city: z.string().trim().min(1).max(40),
     placeCategory: z.string().trim().min(1).max(40).default('街边快餐'),
@@ -36,16 +39,27 @@ export const creatorImportRecordSchema = z
   })
   .superRefine((value, ctx) => {
     if (value.lng === undefined || value.lat === undefined) return;
-    if (
-      value.lng < PEARL_RIVER_LNG_RANGE[0] ||
-      value.lng > PEARL_RIVER_LNG_RANGE[1]
-    )
-      ctx.addIssue({ code: 'custom', path: ['lng'], message: '经度超出珠三角范围' });
-    if (
-      value.lat < PEARL_RIVER_LAT_RANGE[0] ||
-      value.lat > PEARL_RIVER_LAT_RANGE[1]
-    )
-      ctx.addIssue({ code: 'custom', path: ['lat'], message: '纬度超出珠三角范围' });
+    const city = findCity(value.city);
+    if (!city) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['city'],
+        message: '城市不在收录范围',
+      });
+      return;
+    }
+    if (!coordsInBbox(value.lng, value.lat, city.bbox)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lng'],
+        message: `坐标超出${city.full}范围`,
+      });
+      ctx.addIssue({
+        code: 'custom',
+        path: ['lat'],
+        message: `坐标超出${city.full}范围`,
+      });
+    }
   });
 
 export type CreatorImportRecord = z.infer<typeof creatorImportRecordSchema>;

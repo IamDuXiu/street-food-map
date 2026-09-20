@@ -38,7 +38,7 @@ export const PLACES: Place[] = [
     note: '汤底清爽，晚间加肉不加价；高峰期约 10 分钟出餐。',
     verification: '近期核验',
     meals: [
-      { id: 'west-goutiao', name: '牛肉粿条汤', priceFen: 1800, category: '粉面', description: '牛肉片、牛筋丸、青菜', observedAt: '2026-08-27', method: '当次消费小票', freshness: '近期核验' },
+      { id: 'west-goutiao', name: '牛肉粿条汤', priceFen: 1500, category: '粉面', description: '牛肉片、牛筋丸、青菜', observedAt: '2026-08-27', method: '当次消费小票', freshness: '近期核验' },
       { id: 'west-pork', name: '卤肉饭', priceFen: 1600, category: '米饭', description: '卤肉、卤蛋、青菜', observedAt: '2026-08-27', method: '当次消费小票', freshness: '近期核验' },
     ],
   },
@@ -55,7 +55,7 @@ export const PLACES: Place[] = [
     note: '11:45 前选择多；访客从 A3 栋前台登记后可进入。',
     verification: '高可信',
     meals: [
-      { id: 'kexing-set', name: '工作日三菜一汤套餐', priceFen: 2000, category: '套餐', description: '一荤两素 + 汤 + 米饭', observedAt: '2026-08-30', method: '商户官方公开菜单', freshness: '近期核验' },
+      { id: 'kexing-set', name: '工作日三菜一汤套餐', priceFen: 1500, category: '套餐', description: '一荤两素 + 汤 + 米饭', observedAt: '2026-08-30', method: '商户官方公开菜单', freshness: '近期核验' },
       { id: 'kexing-rice', name: '烧腊双拼饭', priceFen: 2200, category: '米饭', description: '叉烧烧鸭双拼，配时蔬', observedAt: '2026-08-30', method: '商户官方公开菜单', freshness: '近期核验' },
     ],
   },

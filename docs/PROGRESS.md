@@ -1,5 +1,18 @@
 # 阶段 5 准备进度
 
+## 全国 5 城 + 店级 ≤15 元门槛 + 网页采集（2026-09-20）
+
+- [x] `lib/cities.ts`（新增）：5 城公开白名单 + 12 城市目录（含唯一 bbox/别名）+ 价格常量 `SHOP_GATE_PRICE_FEN=1500` / `DISPLAY_PRICE_CAP_FEN=20000` / `IMPORT_PRICE_YUAN_MAX=200` / `NATIONAL_BOUNDS`。
+- [x] 公开谓词改店级门槛：`PlaceRepository.listPublic`、`publicPlaceIsEligible`、`eligiblePoints` 由 `price_fen<=2500` 改 `<=1500`；展示侧上限 200 元；并全局加 5 城白名单 `(p.city IS NULL OR p.city IN (...))`，非白名单城市（佛山等）经 bbox/定位也不再漏出。
+- [x] 首页价格档改版：`[15,20,25]` → 「仅看 ≤¥15」/「全部餐食」开关（默认仅看），chip/空状态/localStorage 同步。
+- [x] 区域：`lib/region-districts.ts` 新增北京 16 / 上海 16 / 杭州 13 区（腾讯官方边界固化）；`scripts/seed-regions.ts` 城市种子改由 `CITIES` 生成，公开 5 城排序在前；`region-repository` 城市范围放宽到全国、行政区仍须落在所属城市；`buildRegionCatalog`/`listRegionCities` 只输出 5 城。
+- [x] 导入/投稿校验：`creator-import` 由珠三角 bbox 改按城市 bbox 查表，价格上限 200；投稿 `new_place` 须 ≤15 元且坐标落在公开城市；`csv` 坐标校验同改。
+- [x] 网页采集：新增 `scripts/web-collect.ts` + `npm run collect:web`（必应/百度 HTML 解析、正文启发式抽取、MiniMax OpenAI 兼容调用、JSON 容错解析、店级 ≤15 元过滤），输出可粘贴到 `/admin/creator-import`。
+- [x] migration 011 `source_leads.review_notes`（评价仅人工参考，公开 DTO 不读取）；`restore.ts` `CURRENT_SCHEMA=11`；测试迁移清单/断言同步。
+- [x] 存量切换：备份后 `npm run setup` 回填区域（122→170）并刷新 demo 价格（`shenda-west-noodle` 1800→1500、`kexing-b1-foodcourt` 2000→1500），使 demo 店按新门槛公开；宏兴茶餐厅 ¥20、佛山店按新口径自动下架（数据留库）。
+- [x] 验证：`lint` / `typecheck` / `npm test`（26 文件 / **156 测试**）/ `build` 全通过；B站小量跑（5 城词表 `--pages 1`）80 抓取 → 13 条（广州 3 / 深圳 6 / 北京 4，含待补占位），验证新城市与 15 元门槛生效。
+- [ ] 待用户提供 `MINIMAX_API_KEY` 后跑 `npm run collect:web`（必应小批量）并做「预览→人工确认坐标→提交」端到端走查。
+
 ## 城市归属字段 + 术语统一（2026-09-15）
 
 - [x] migration 010 `010_place_city.sql`：`pilot_zones` 与 `places` 新增 `city` 列 + `idx_places_city`；按 `creator-<cityId>` 前缀与最小包含城市 bbox 回填；真实库 schema 9→10，`places.city` 全部回填（demo=深圳市，creator=佛山/深圳/广州）。修复 HANDOFF §12「广州 bbox 返回佛山点位」。

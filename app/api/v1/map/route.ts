@@ -6,6 +6,11 @@ import {
 } from '@/lib/server/repository';
 import { TAGS, PLACES, VIEWPORTS } from '@/lib/fixtures';
 import { toPublicPlace } from '@/lib/server/public';
+import {
+  DISPLAY_PRICE_CAP_FEN,
+  isPublicCity,
+  PUBLIC_CITY_IDS,
+} from '@/lib/cities';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +42,7 @@ function parse(
     (maxPriceFen === undefined ||
       !Number.isInteger(maxPriceFen) ||
       maxPriceFen < 1 ||
-      maxPriceFen > 2500)
+      maxPriceFen > DISPLAY_PRICE_CAP_FEN)
   )
     return bad('价格上限无效');
   const sort = params.get('sort') as PublicMapFilters['sort'] | null;
@@ -103,8 +108,10 @@ export async function GET(request: NextRequest) {
         db
           .prepare("SELECT id FROM regions WHERE level='city' AND active=1")
           .all() as Array<{ id: string }>
-      ).map((row) => row.id)
-    : [];
+      )
+        .map((row) => row.id)
+        .filter((id) => isPublicCity(id))
+    : [...PUBLIC_CITY_IDS];
   const allowedZoneIds = databaseZoneIds.length
     ? databaseZoneIds
     : VIEWPORTS.map((zone) => zone.id);
@@ -133,7 +140,10 @@ export async function GET(request: NextRequest) {
     });
   } catch {
     // Fixture fallback is deliberately limited to safe, already-public demo data.
-    const max = Math.min(parsed.maxPriceFen ?? 2500, 2500);
+    const max = Math.min(
+      parsed.maxPriceFen ?? DISPLAY_PRICE_CAP_FEN,
+      DISPLAY_PRICE_CAP_FEN,
+    );
     const cutoff = new Date(now);
     cutoff.setUTCDate(cutoff.getUTCDate() - 180);
     const fallback = PLACES.filter(

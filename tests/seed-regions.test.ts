@@ -19,7 +19,7 @@ function tempDb() {
 }
 
 describe('区域目录回填', () => {
-  it('回填珠三角 9 市并保持幂等', () => {
+  it('回填 12 市并保持幂等', () => {
     const db = tempDb();
     const expected = regionSeedRecords().length;
     expect(seedRegions(db)).toBe(expected);
@@ -31,7 +31,7 @@ describe('区域目录回填', () => {
     db.close();
   });
 
-  it('包含 9 个城市，且深圳行政区/商圈完整', () => {
+  it('包含 12 个城市，且深圳行政区/商圈完整', () => {
     const db = tempDb();
     seedRegions(db);
     const cities = (
@@ -40,8 +40,11 @@ describe('区域目录回填', () => {
         .all() as Array<{ name: string }>
     ).map((row) => row.name);
     expect(cities).toEqual([
-      '深圳市',
+      '北京市',
+      '上海市',
       '广州市',
+      '深圳市',
+      '杭州市',
       '佛山市',
       '东莞市',
       '中山市',
@@ -93,7 +96,7 @@ describe('区域目录回填', () => {
     db.close();
   });
 
-  it('珠三角 8 市行政区已回填（东莞/中山为直筒子市）', () => {
+  it('珠三角 8 市与北上杭行政区已回填（东莞/中山为直筒子市）', () => {
     const db = tempDb();
     seedRegions(db);
     const counts = Object.fromEntries(
@@ -113,6 +116,9 @@ describe('区域目录回填', () => {
       huizhou: 5,
       jiangmen: 7,
       zhaoqing: 8,
+      beijing: 16,
+      shanghai: 16,
+      hangzhou: 13,
     });
     expect(counts.dongguan).toBeUndefined();
     expect(counts.zhongshan).toBeUndefined();

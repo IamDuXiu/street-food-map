@@ -11,6 +11,7 @@ import {
   verifiedVerificationMethods,
 } from './validation';
 import { freshness } from '../freshness';
+import { findPublicCityByCoords, SHOP_GATE_PRICE_FEN } from '../cities';
 
 export { freshness };
 export function isPublicPrice(
@@ -20,7 +21,7 @@ export function isPublicPrice(
   verificationMethod?: string,
 ) {
   return (
-    priceFen <= 2500 &&
+    priceFen <= SHOP_GATE_PRICE_FEN &&
     freshness(observedAt, now) !== 'expired' &&
     verificationMethod !== 'external_lead'
   );
@@ -372,7 +373,8 @@ export function approveSubmission(
       const now = new Date().toISOString();
       let priceReportId: string | undefined;
       if (payload.type === 'new_place') {
-        if (payload.priceFen > 2500) throw new Error('PUBLIC_PRICE_LIMIT');
+        if (payload.priceFen > SHOP_GATE_PRICE_FEN)
+          throw new Error('PUBLIC_PRICE_LIMIT');
         const zone = db
           .prepare('SELECT id FROM pilot_zones WHERE id=? AND active=1')
           .get(payload.zoneId);
@@ -606,11 +608,11 @@ export function previewCsv(
         field: 'zone_name',
         message: '片区不存在或未启用',
       });
-    if (row.lng < 113.6 || row.lng > 114.7 || row.lat < 22.4 || row.lat > 22.9)
+    if (!findPublicCityByCoords(row.lng, row.lat))
       errors.push({
         row: index + 2,
         field: 'lng/lat',
-        message: '坐标超出深圳可配置范围',
+        message: '坐标超出公开城市范围',
       });
 
     const coordinates = placeCoordinates.get(key);

@@ -3,6 +3,7 @@ import type { SqliteDatabase } from './db';
 export const CREATOR_PLATFORMS = [
   'bilibili',
   'youtube',
+  'web',
   'xiaohongshu',
   'douyin',
   'dianping',

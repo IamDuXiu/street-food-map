@@ -1,5 +1,21 @@
 # 阶段 0 实施决策
 
+## 2026-09-20 · 范围扩为全国 5 城 + 店级 ≤15 元门槛 + 搜索引擎网页采集
+
+产品负责人确认两项旧决策变更，并新增采集线：
+
+1. **范围：珠三角 9 市 → 全国 5 城**（北京、上海、广州、深圳、杭州），后续可扩展。推翻 HANDOFF §6.3「仅珠三角」。公开目录由 `lib/cities.ts` 的 **5 城白名单**驱动：`regions` 数据保留（含珠三角 7 市，便于日后恢复/扩展），但 `listPublic`、`region-repository`、`map`/`config` 路由一律按白名单过滤；非白名单城市即使命中 bbox 或「我的附近」也不公开。
+2. **价格门槛：每份餐食 ≤25 元 → 店级门槛「店内至少一份 ≤15 元单人餐食」**。公开资格谓词从 `price_fen<=2500` 改为 `price_fen<=1500`（`SHOP_GATE_PRICE_FEN`）；收录后店内其余餐食如实展示，仅设 sanity 上限 200 元（`DISPLAY_PRICE_CAP_FEN`）。存量按新口径自动重判：无 ≤15 元餐的门店（如广州宏兴茶餐厅 ¥20）下架，佛山等非白名单城市下架（数据留库）。
+3. **首页价格档改版**：`[15,20,25]` 三档 → 「仅看 ≤¥15」/「全部餐食」开关，默认仅看 ≤¥15；清除 chip、空状态文案、localStorage 恢复同步。
+4. **新增网页采集线**（`scripts/web-collect.ts`，`npm run collect:web`）：搜索引擎（必应默认 / 百度可选）广撒网 → 正文抽取（启发式，无新依赖）→ **MiniMax** OpenAI 兼容接口结构化抽取 → 对齐 `creatorImportRecordSchema` 的 JSON → 复用既有「预览→人工确认坐标→提交」管线。抽取使用的「评价（reviewNotes）」仅作人工参考：新增 migration 011 `source_leads.review_notes`，公开 DTO 不读取。
+5. **采集口径**：`BUDGET_PRICE_YUAN` 25 → 15（脚本只保留 ≤15 元线索）；关键词表改为 5 城 × 廉价快餐词族，新增「工地餐」「大学城 便宜」，移除「长者食堂」。
+6. **坐标/region 校验**：`creator-import` 由「珠三角 bbox」改为**按城市 bbox 查表**（`lib/cities.ts`）；`region-repository` 城市级范围放宽到全国（`NATIONAL_BOUNDS`），行政区仍须落在所属城市；用户投稿/CSV 坐标改按「是否落在公开城市」校验。
+7. **迁移纪律**：新增 `db/migrations/011_web_lead_notes.sql`，schema 10→11；`scripts/restore.ts` `CURRENT_SCHEMA=11`、`SUPPORTED_BACKUP_SCHEMAS` 同步；`tests/migrations.test.ts`、`tests/restore.test.ts` 断言同步。
+8. **区域回填**：新增北京 16 区、上海 16 区、杭州 13 区（腾讯 `district/getchildren` 官方边界，GCJ-02，2026-09-19 固化于 `lib/region-districts.ts`）；城市种子改由 `CITIES` 生成，公开 5 城排序在前。真实库 `regions` 122→170。
+9. **不可推翻的约束保留**：`external_lead` 永不可 `verified`（触发器）；180 天新鲜度；GCJ-02；金额以分；来源标签 `平台@作者`；AI/LLM 密钥只走环境变量。
+
+验证：`lint` / `typecheck` / `npm test`（26 文件 / 156 测试）/ `build` 全通过；真实库备份 `budget-map-backup-20260920012113.zip` 后迁移并回填；B站小量跑（5 城词表，`--pages 1`）抓取 80 → 产 13 条（广州 3 / 深圳 6 / 北京 4）。网页采集待用户提供 `MINIMAX_API_KEY` 后跑。
+
 ## 2026-09-15 · 城市归属字段 + 术语统一为「线索池」
 
 后台 `/admin/leads` 此前导航写「线索池」、页内标题与 eyebrow 写「候选池」，术语不一致；统一为「线索池」（eyebrow `02 / LEADS`，kicker `线索池 / LEADS`）。内部英文标识（`lib/candidate-pool.ts`、`components/candidate-pool.tsx`、`candidate-*` CSS 类）保持不变，只统一展示文案。
