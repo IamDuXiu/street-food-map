@@ -64,7 +64,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "@types/better-sqlite3": "7.6.12",
-    "@types/node": "22.7.4",
+    "@types/node": "26.6.5",
     "@types/react": "19.1.2",
     "@types/react-dom": "19.1.2",
     "eslint": "9.27.0",
