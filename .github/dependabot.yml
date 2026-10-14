@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # 依赖与安全公告：每周一检查，自动开 PR（会跑 CI）。
+  # 这个项目此前攒下 3 个生产依赖漏洞就是因为没有任何自动提醒。
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    groups:
+      # 补丁与次要版本合并成一个 PR，避免刷屏
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+    labels: [dependencies]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, ci]
+  # 基础镜像（node:22-bookworm-slim）的补丁更新
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [dependencies, docker]

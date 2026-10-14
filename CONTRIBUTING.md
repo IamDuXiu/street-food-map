@@ -22,7 +22,7 @@ npm run setup
 npm run dev
 ```
 
-Node.js 20.9+（推荐用 `.nvmrc` 里的 22）。Docker 用户见 README。
+Node.js **22+**（见 `.nvmrc`；Node 20 已停止维护，`engines` 也要求 ≥22）。Docker 用户见 README。
 
 ## 提交前必须自检
 

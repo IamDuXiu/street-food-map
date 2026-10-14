@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/IamDuXiu/street-food-map/actions/workflows/ci.yml/badge.svg)](https://github.com/IamDuXiu/street-food-map/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D20.9-brightgreen.svg)](package.json)
+[![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](package.json)
 
 一张**平价餐食地图**：记录的不是「这家店不错」，而是「这家店的**这份饭**、**哪天核验过**、**多少钱**」。
 
@@ -93,7 +93,7 @@ docker compose up -d
 
 ### 方式 B：本机 Node.js
 
-需要 **Node.js 20.9+**（Next.js 16 要求）。
+需要 **Node.js 22+**（Next.js 16 要求 ≥20.9，但 Node 20 已停止维护，本项目按 22 LTS 开发与测试，见 `.nvmrc`）。
 
 ```bash
 git clone https://github.com/IamDuXiu/street-food-map.git
