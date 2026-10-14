@@ -221,6 +221,8 @@ npm run test:e2e       # Playwright（隔离临时库，不碰你的 data/）
 
 自托管（Docker Compose、裸机 systemd、反向代理 + HTTPS）、备份恢复、上线安全检查清单，见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
 
+**没有服务器和域名也能开在线 demo**：本机 + 免费隧道（零成本、自带 HTTPS）、VPS 用 IP 直连（前台可用、后台需要 HTTPS）、或月付几美元的托管平台。三种路径各自要付什么代价、有哪些坑，见 [docs/DEPLOYMENT.md 的「没有服务器和域名怎么办」](docs/DEPLOYMENT.md#没有服务器和域名怎么办)。
+
 架构与数据模型见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)；后台日常操作见 [docs/ADMIN-GUIDE.md](docs/ADMIN-GUIDE.md)。
 
 ---
