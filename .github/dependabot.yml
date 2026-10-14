@@ -9,6 +9,13 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     versioning-strategy: increase
+    # 只自动提次要/补丁版本；大版本一律人工处理（见 issue #10）。
+    # 首次接入时 Dependabot 一次开了 6 个 PR，其中 5 个是跨大版本
+    # （typescript 5→7、zod 3→4、@types/node 22→26、eslint 9→10、node 22→26），
+    # 会直接淹没一个刚开源的小仓库，也不该在没有人工迁移的情况下合并。
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       # 补丁与次要版本合并成一个 PR，避免刷屏
       minor-and-patch:
