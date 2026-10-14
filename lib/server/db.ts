@@ -5,8 +5,15 @@ import Database from 'better-sqlite3';
 export type SqliteDatabase = Database.Database;
 
 const projectRoot = process.cwd();
-export const dataDir = path.resolve(/* turbopackIgnore: true */ process.env.DATA_DIR ?? path.join(projectRoot, 'data'));
-export const databasePath = path.resolve(/* turbopackIgnore: true */ process.env.DATABASE_PATH ?? path.join(dataDir, 'budget-map.sqlite'));
+
+/** Treat unset *and blank* env values as "not configured", so `DATA_DIR=` cannot resolve to the cwd. */
+function envValue(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+export const dataDir = path.resolve(/* turbopackIgnore: true */ envValue('DATA_DIR') ?? path.join(projectRoot, 'data'));
+export const databasePath = path.resolve(/* turbopackIgnore: true */ envValue('DATABASE_PATH') ?? path.join(dataDir, 'budget-map.sqlite'));
 
 let cached: SqliteDatabase | null = null;
 

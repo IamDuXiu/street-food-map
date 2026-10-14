@@ -1,13 +1,37 @@
 {
-  "name": "shenzhen-budget-map",
+  "name": "street-food-map",
   "version": "0.1.0",
   "private": true,
+  "description": "街头饭签 · 平价餐食地图：按「具体餐食 + 具体价格 + 具体核验日期」记录一座城市的便宜饭吃在哪。",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IamDuXiu/street-food-map.git"
+  },
+  "homepage": "https://github.com/IamDuXiu/street-food-map#readme",
+  "bugs": {
+    "url": "https://github.com/IamDuXiu/street-food-map/issues"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "keywords": [
+    "street-food",
+    "restaurant",
+    "map",
+    "budget",
+    "sqlite",
+    "nextjs",
+    "open-data",
+    "china"
+  ],
   "overrides": {
     "postcss": ">=8.5.23",
     "sharp": "0.35.4"
   },
   "scripts": {
     "setup": "tsx scripts/setup-demo.ts",
+    "bootstrap": "tsx scripts/bootstrap.ts",
     "dev": "next dev --webpack",
     "dev:lan": "node scripts/dev-lan.mjs",
     "build": "next build",

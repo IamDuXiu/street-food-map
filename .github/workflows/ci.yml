@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: lint / typecheck / test / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  docker:
+    name: docker build + smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t street-food-map:ci .
+      - name: Run container (first boot)
+        run: |
+          docker run -d --name sfm -p 3000:3000 \
+            -e ADMIN_PASSWORD=ci-smoke-test-password \
+            -e SEED_DEMO=1 \
+            street-food-map:ci
+      - name: Wait for readiness and smoke test
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:3000/api/v1/config > /tmp/config.json; then
+              echo "app is up after ${i}s"; break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:3000/api/v1/config | head -c 400
+          curl -fsS -o /dev/null -w 'home=%{http_code}\n' http://127.0.0.1:3000/
+          curl -fsS -o /dev/null -w 'admin-login=%{http_code}\n' http://127.0.0.1:3000/admin/login
+      - name: Container logs
+        if: always()
+        run: docker logs sfm
+
+  e2e:
+    name: playwright (chromium)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

@@ -1,0 +1,34 @@
+name: 功能建议
+description: 提一个新功能、改进或新的城市/区域目录
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      description: 描述使用场景，而不是直接给方案
+      placeholder: 例如：我想按「地铁沿线」而不是行政区筛店，因为……
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 你的想法（可选）
+      description: 如果有具体方案可以写在这里
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        ### 请注意项目的既有边界
+
+        以下方向是**已明确不做**的，提这类建议前请先读 README 与 docs/ARCHITECTURE.md：
+
+        - 无边界全国铺开（当前只公开 5 城白名单）
+        - 把创作者/社区内容标为「已核验」
+        - 自动抓取小红书 / 抖音 / 大众点评
+        - 搬运创作者视频或封面
+        - 用户账号 / 微信登录 / 评论系统
+
+        另外：批量数据 PR 不会被接受，数据请走投稿或后台上传入口（见 CONTRIBUTING.md）。

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（私下报告）
+    url: https://github.com/IamDuXiu/street-food-map/security/advisories/new
+    about: 漏洞、密钥泄露、越权访问请不要开公开 issue，走这里。
+  - name: 部署与运行问题
+    url: https://github.com/IamDuXiu/street-food-map/blob/main/docs/DEPLOYMENT.md
+    about: 先看部署文档与 docs/CONFIGURATION.md 的环境变量说明。
+  - name: 想贡献代码
+    url: https://github.com/IamDuXiu/street-food-map/blob/main/CONTRIBUTING.md
+    about: 开发环境、提交前自检、代码约定与数据类贡献规则。

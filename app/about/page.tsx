@@ -16,7 +16,7 @@ export default function AboutPage() {
             <h2>收录标准</h2>
             <ol className="rule-list">
               <li><strong>单人能买</strong><span>不要求拼单，不把多人套餐拆成“人均价”。</span></li>
-              <li><strong>日常不超过 ¥25</strong><span>优惠券、首单价和限时补贴不算。</span></li>
+              <li><strong>店里有一份 ≤ ¥15</strong><span>店内至少一份 15 元以内的单人餐食即可收录，其余餐食如实标价。优惠券、首单价和限时补贴不算。</span></li>
               <li><strong>具体到一道菜</strong><span>写清菜名和这一份的价格，不写“人均消费”。</span></li>
               <li><strong>180 天内核验</strong><span>超过 180 天的价格会从地图隐去，直到有人重新确认。</span></li>
             </ol>

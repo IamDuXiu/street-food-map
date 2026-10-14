@@ -1,4 +1,13 @@
+import fs from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// 本机（macOS）默认用系统 Chrome；其他平台 / CI 回退到 Playwright 自带的 Chromium
+// （CI 里用 `npx playwright install --with-deps chromium` 安装）。
+// 需要指定浏览器时用 PLAYWRIGHT_CHROME_PATH 覆盖。
+const chromePath =
+  process.env.PLAYWRIGHT_CHROME_PATH ??
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const launchOptions = fs.existsSync(chromePath) ? { executablePath: chromePath } : {};
 
 export default defineConfig({
   testDir: './e2e',
@@ -6,7 +15,7 @@ export default defineConfig({
   workers: 1,
   use: {
     baseURL: 'http://127.0.0.1:3100',
-    launchOptions: { executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' },
+    ...(Object.keys(launchOptions).length ? { launchOptions } : {}),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure'
   },

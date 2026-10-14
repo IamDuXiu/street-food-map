@@ -267,3 +267,20 @@
 - 测试：`tests/seed-regions.test.ts` 新增 8 市行政区数量断言；`tests/region-repository.test.ts` 原「广州无下级」改为「广州 11 区 + 东莞无下级」。全量 `npm test` **25 文件 150 测试**通过；`lint` / `typecheck` / `build`（exit 0）全通过。
 - 真实库：`npm run backup`（`backups/budget-map-backup-20260913070304.zip`）后 `npm run seed:regions` → regions 83 → **122**（9 城 + 49 区 + 64 商圈）。实时 `GET /api/v1/config?city=` 校验：广州 11 / 佛山 5 / 珠海 3 / 惠州 5 / 江门 7 / 肇庆 8 / 东莞 0 / 深圳 10。
 - 尚未做：8 市的**商圈**仍为空（按 `PLAN-REGIONS.md` §4「逐市按数据补齐」后续追加）；行政区 bbox 为官方简化边界取范围，未做精确化。
+
+### 苹果式流体界面：动效、材质与响应基线（2026-09-21）
+
+采用 Apple《Designing Fluid Interfaces》的交互基线强化动效、材质与响应，不新增依赖、不改“街头饭签”票据式视觉语言（米白纸张 / 辣椒红 / 青绿 / 票据虚线 / 等宽数字照旧）。
+
+- **新增 `lib/motion.ts`**：解析弹簧 `springTo`（`damping` 阻尼比 + `response` 响应时长）、惯性投影 `project`（指数衰减，默认 `0.998`）、软边界 `rubberband`、吸附 `nearestSnapPoint`、速度追踪 `createVelocityTracker`、`prefersReducedMotion/prefersReducedTransparency`。弹簧支持 `setTarget` 中途改目标（从当前值 + 当前速度重新解算）与 `stop()`，因此天然可中断。rAF 带 `setTimeout` 兜底，可在非浏览器宿主运行。
+- **新增 `lib/use-sheet-gesture.ts`**：移动端结果面板拖拽手势。1:1 跟手、10px 方向迟滞、越界 `rubberband`、松开按 `project` 投影落点吸附最近档位、释放速度交接到弹簧、可被下一次按下打断；轻点抓条在相邻档位间收放。`useMobileSheetEnabled()` 只在 ≤620px 且非 reduced-motion 时启用。
+- **`components/home-client.tsx` / `home-client.module.css`**：结果面板接入上述手势（`sheetDragging` 期间关闭 CSS 过渡，由弹簧逐帧写 `height`）；面板改半透明材质 + 模糊；顶部新增抓条（避开右上三态按钮区域）；桌面/移动断点均保持既有三态按钮可用（键盘可达）。
+- **`components/region-picker.tsx`**：打开时按触发按钮位置设置 `transform-origin` 并从 0.94 弹到 1（临界阻尼、无过冲，因为不是甩动）；退出沿同一路径镜像返回。≤620px 整屏形态不缩放、只交叉淡入。**交互不变量**：退场遮罩加 `pointer-events: none`；入场中按在面板布局盒内的按下视为误瞄、不关闭面板。
+- **`app/globals.css`**：`--motion-*` / `--material-*` / `--elevation-*` / `--track-*` 令牌；正文改平台系统字体优先 + `font-optical-sizing` + 字号分级字距；`site-header`/`admin-header` 改 sticky 半透明 + `backdrop-filter`，用滚动渐隐边缘取代硬分隔线；区域选择器/对话框/Select 菜单改半透明材质；全局按下 `scale` 反馈（独立 `scale` 属性，不覆盖既有 transform/rotate）；`prefers-reduced-motion` / `prefers-reduced-transparency` / `prefers-contrast` 三个独立偏好分支。
+- **测试**：新增 `tests/motion.test.ts`（9 例：投影数值与单调性、软边界递减且小于真实位移、吸附取最近、临界阻尼无过冲、欠阻尼回弹、中途改目标无跳变且保留速度、速度交接、`stop()` 后不再出帧、速度窗口过期归零）。
+- **回归修复**：新增的退场动画一度让关闭中的遮罩继续拦截点击（e2e `core-flow.spec.ts:34/316` 抖动）。以 `git worktree` 检出 HEAD 基线 `--repeat-each=4` 复跑确认基线稳定、抖动由本次改动引入；按第 7 条不变量修复后同口径复跑 8/8 确定性通过。
+- **验证**：`npm run lint` / `npm run typecheck` / `npm test`（**27 文件 / 169 测试**）/ `npm run build`（exit 0）/ 全量 e2e（**46**）全通过。
+
+### 规则页收录标准间距统一（2026-09-21）
+
+`app/globals.css` 的 `.rule-list li`：原先 `padding: 15px 0` 配合 `strong { margin-top: -19px }` 的对齐 hack，导致标题实际**上溢 4px**（`strong.top - li.top = -4`）、下方留 16px，上下不对称。改为 `padding: 12px 0` + `align-items: baseline`（去掉负 margin hack），序号与标题基线对齐。实测：`padding 12px / 12px`、标题上方 12px、描述下方 12px（下方另计 1px 虚线边框），四项完全一致。

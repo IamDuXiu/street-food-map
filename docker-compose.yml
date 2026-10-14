@@ -1,0 +1,39 @@
+# 街头饭签 · 一键自托管
+#
+#   cp .env.example .env    # 取消注释并填写 ADMIN_PASSWORD / SESSION_SECRET
+#   docker compose up -d
+#   open http://localhost:3000
+#
+# 数据（SQLite、上传图片、备份）都存在命名卷 street-food-map-data 的 /data 下，
+# 容器重建不会丢。NEXT_PUBLIC_* 需要在构建期注入，所以同时出现在 build.args 与 environment。
+services:
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_MAP_MODE: ${NEXT_PUBLIC_MAP_MODE:-demo}
+        NEXT_PUBLIC_TENCENT_MAP_KEY: ${NEXT_PUBLIC_TENCENT_MAP_KEY:-}
+    image: street-food-map:latest
+    container_name: street-food-map
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-3000}:3000"
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      SEED_DEMO: ${SEED_DEMO:-1}
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      TENCENT_MAP_WEB_SERVICE_KEY: ${TENCENT_MAP_WEB_SERVICE_KEY:-}
+      BILIBILI_COOKIE: ${BILIBILI_COOKIE:-}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      MINIMAX_BASE_URL: ${MINIMAX_BASE_URL:-}
+      MINIMAX_MODEL: ${MINIMAX_MODEL:-}
+      NEXT_PUBLIC_MAP_MODE: ${NEXT_PUBLIC_MAP_MODE:-demo}
+      NEXT_PUBLIC_TENCENT_MAP_KEY: ${NEXT_PUBLIC_TENCENT_MAP_KEY:-}
+    volumes:
+      - street-food-map-data:/data
+
+volumes:
+  street-food-map-data:

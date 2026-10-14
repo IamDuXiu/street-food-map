@@ -1,0 +1,59 @@
+name: Bug 报告
+description: 运行、界面或数据展示出问题了
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认：这不是安全漏洞（安全问题请走 SECURITY.md 私下报告），并且你已看过 README / docs 里的对应章节。
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 期望的行为 vs 实际的行为
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 /
+        2. 选择城市「深圳」
+        3. 点击 …
+        4. 看到 …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本 / commit
+      description: commit hash，或你 clone 的日期
+    validations:
+      required: true
+  - type: dropdown
+    id: run-mode
+    attributes:
+      label: 运行方式
+      options:
+        - Docker Compose
+        - 本机 npm run dev
+        - 本机生产模式（build + start）
+        - 其他（在下方说明）
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: 环境
+      description: 操作系统、Node 版本、浏览器；如果和你改过的配置有关，请把相关环境变量名写出来（**不要粘贴密钥**）
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图
+      description: 终端报错、浏览器控制台输出或截图
+    validations:
+      required: false

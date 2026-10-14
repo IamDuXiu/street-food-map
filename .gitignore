@@ -1,22 +1,32 @@
+# 依赖与构建产物
 node_modules
-/.codex/
-/.agents/
-/.claude/
-/AGENTS.md
-.DS_Store
 .next
 .next-*/
-playwright-report
-test-results
-coverage
-.env*
-!.env.example
-*.log
+out
 *.tsbuildinfo
-artifacts/**
+
+# 运行时数据：数据库、上传、备份、采集输出、临时文件、验收产物
 data/**
 uploads/**
 backups/**
 outputs/**
 tmp/**
+artifacts/**
 sources/**
+travel-output/**
+test-results
+playwright-report
+coverage
+
+# 环境变量：只提交样例
+.env
+.env.*
+!.env.example
+
+# 工具与系统
+.codex/
+.agents/
+.claude/
+AGENTS.md
+.DS_Store
+*.log

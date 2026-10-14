@@ -1,5 +1,20 @@
 # 阶段 0 实施决策
 
+## 2026-09-21 · 苹果式流体界面：动效、材质与响应基线
+
+引入 Apple《Designing Fluid Interfaces》/《Principles of Great Design》的交互基线，**不新增依赖**（手写弹簧，无 motion/framer-motion），**不改动“街头饭签”票据式视觉语言**（米白纸张、辣椒红价格、青绿可信、票据虚线分隔、等宽数字照旧；继续避开紫色渐变与过度卡片化），只做交互层与材质层强化：
+
+1. **动效原语 `lib/motion.ts`**：可中断、带速度的解析弹簧（`springTo`，`damping` 阻尼比 + `response` 响应时长，与 Apple 参数语义一致）、惯性落点投影 `project`（Apple 指数衰减式，`decelerationRate≈0.998`，**不是**物理课本的 `v²/2a`）、边界阻尼 `rubberband`、吸附点 `nearestSnapPoint`、速度追踪 `createVelocityTracker`、`prefersReducedMotion/prefersReducedTransparency`。弹簧在 `setTarget` 时从**当前值 + 当前速度**重新解算，因此可被随时抓住并反向，不会出现“撞墙”跳变。
+2. **手势驱动的动效一律走弹簧**：`@keyframes` / CSS transition 只用于非手势的状态变化。移动端结果面板改为可拖拽面板：按下即 1:1 跟手（`pointerdown` 立刻 `transition:none`）、约 10px 迟滞后才判定方向、越界用 `rubberband` 提供软边界、松开时用 `project` 投影落点再吸附、把释放速度交给弹簧续接、全程可被下一次按下打断。
+3. **材质与层次**：`site-header` / `admin-header` 改为 sticky + 半透明 + `backdrop-filter`，用**滚动渐隐边缘**取代 1px 硬分隔线（内容从 chrome 下穿过）；区域选择器、对话框、自定义 Select 菜单同为半透明材质；移动端结果面板用半透明材质。`prefers-reduced-transparency: reduce` 与 `prefers-contrast: more` 下自动回退为不透明纯色 + 无模糊。
+4. **按下即响应**：所有控件在 `pointerdown` 立刻给出反馈，用独立 `scale` 属性实现（与既有 `transform/rotate/scale` 组合，不覆盖地图 pin / 坐标标记的位移），配 120ms 回归曲线；`@media (hover: none)` 下关闭 hover 位移，触摸设备只保留按下反馈。
+5. **排印**：正文优先使用平台系统字体（`system-ui` / `-apple-system` / 苹方回退），启用 `font-optical-sizing`；字距按字号分级（大字负字距、正文近 0、小字与票据等宽轻微正字距），行高与字号反向。
+6. **空间一致性**：区域选择器从其触发按钮位置生长（`transform-origin` 锚定 trigger），退出沿同一路径镜像返回；≤620px 的整屏形态不做缩放，改用交叉淡入。
+7. **不可破坏的交互不变量**：**正在退场或入场的表面绝不能吞掉下一次交互**。退场中的遮罩加 `pointer-events: none`；入场中若按下点落在面板布局盒内（用户瞄的是面板，只是面板仍在放大），视为误瞄、不触发遮罩关闭。此条同时修掉了「首次点击左侧区县列表反而关闭面板」的真实缺陷与 e2e 抖动。
+8. **无障碍**：`prefers-reduced-motion: reduce` 下 JS 弹簧直接跳到终值、CSS 过渡归零（非“无反馈”，而是改为淡入淡出等价形式）；三个偏好信号（motion / transparency / contrast）互相独立。
+
+验证：`npm run lint` / `npm run typecheck` / `npm test`（**27 文件 / 169 测试**，新增 `tests/motion.test.ts` 9 例覆盖投影、阻尼、速度续接、可中断、停止）/ `npm run build` / 全量 e2e（**46**）全通过；另对本次改动的两个用例做 `--repeat-each=4` 复跑确认为确定性通过（以 `git worktree` + HEAD 基线对比确认抖动由本次入场动画引入并已被上述不变量修复）。
+
 ## 2026-09-20 · 范围扩为全国 5 城 + 店级 ≤15 元门槛 + 搜索引擎网页采集
 
 产品负责人确认两项旧决策变更，并新增采集线：
