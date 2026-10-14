@@ -4,7 +4,7 @@
 # node_modules 与 scripts/，首次启动可以直接用 tsx 跑 scripts/bootstrap.ts 建库、
 # 迁移、写区域目录与演示数据。代价是镜像偏大（约 1GB 级），换来的是「一条命令能跑」。
 
-FROM node:22-bookworm-slim AS deps
+FROM node:26-bookworm-slim AS deps
 WORKDIR /app
 # better-sqlite3 / sharp 在无预编译包时需要本地编译工具链。
 RUN apt-get update \
@@ -13,7 +13,7 @@ RUN apt-get update \
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 # NEXT_PUBLIC_* 会被 Next.js 在构建期内联，必须在这里注入。
@@ -25,7 +25,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22-bookworm-slim AS runner
+FROM node:26-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
