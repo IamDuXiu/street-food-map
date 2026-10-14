@@ -35,6 +35,18 @@
   background: #fff;
 }
 
+.demoNotice {
+  margin: 0 0 12px;
+  padding: 7px 12px;
+  border: 1px dashed #e5c9c2;
+  border-radius: 10px;
+  background: #fff8f6;
+  color: #8a5a4d;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .controlBar {
   display: grid;
   gap: 10px;

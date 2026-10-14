@@ -31,8 +31,8 @@
 |---|---|
 | `app/` | 页面与 API 路由。`app/`（用户端）：`/`、`/places/[id]`、`/submit`、`/submit/status`、`/about`；`app/admin/*`：后台；`app/api/v1/*`：接口 |
 | `components/` | 组件。`components/ui/` 是共享控件（`Select` / `Notice` / `ConfirmDialog`） |
-| `lib/` | 领域模型与纯逻辑：`types.ts`、`cities.ts`（城市白名单与价格常量）、`regions.ts`、`trust.ts`、`filter.ts`、`map-adapter.ts`、`motion.ts`（弹簧动效） |
-| `lib/server/` | 服务端：`db.ts`（连接 + 迁移执行）、`repository.ts`、`public.ts`（公开读模型）、`region-repository.ts`、`creator-import.ts`、`geocode.ts`、`sources.ts`、`auth.ts`、`audit.ts`、`validation.ts`、`media.ts`、`services.ts` |
+| `lib/` | 领域模型与纯逻辑：`types.ts`、`cities.ts`（城市白名单与价格常量）、`regions.ts`、`trust.ts`、`filter.ts`、`map-adapter.ts`、`motion.ts`（弹簧动效）、`demo-dataset.ts`（5 城演示数据，纯数据） |
+| `lib/server/` | 服务端：`db.ts`（连接 + 迁移执行）、`repository.ts`、`public.ts`（公开读模型）、`region-repository.ts`、`creator-import.ts`、`geocode.ts`、`sources.ts`、`auth.ts`、`audit.ts`、`validation.ts`、`media.ts`、`services.ts`、`seed.ts` 与 `seed-national.ts`（演示数据写入）、`demo-status.ts`（本实例是否含演示数据）、`preflight.ts`（部署前凭据自查） |
 | `db/migrations/` | 版本化 SQL 迁移，文件名前缀即版本号，按序在事务中执行 |
 | `scripts/` | 初始化、采集、备份恢复、运维、验收脚本 |
 | `e2e/` | Playwright 用例（用户端主流程 + 统一 UI 回归） |

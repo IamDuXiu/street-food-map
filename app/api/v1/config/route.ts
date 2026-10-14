@@ -3,6 +3,7 @@ import { openDatabase } from '@/lib/server/db';
 import { TAGS, VIEWPORTS } from '@/lib/fixtures';
 import { SHENZHEN_REGION_CATALOG } from '@/lib/regions';
 import { buildRegionCatalog } from '@/lib/server/region-repository';
+import { hasDemoData } from '@/lib/server/demo-status';
 import { DISPLAY_PRICE_CAP_FEN, SHOP_GATE_PRICE_FEN } from '@/lib/cities';
 
 export const dynamic = 'force-dynamic';
@@ -26,9 +27,10 @@ export async function GET(request: Request) {
       tags: tags.length ? tags.map((tag) => tag.name) : TAGS,
       zones: zones.length ? zones : fallbackZones,
       regions: buildRegionCatalog(db, cityId) ?? SHENZHEN_REGION_CATALOG,
+      demoData: hasDemoData(db),
       map: { mode: process.env.NEXT_PUBLIC_MAP_MODE === 'tencent' && process.env.NEXT_PUBLIC_TENCENT_MAP_KEY ? 'tencent' : 'demo', hasMapKey: Boolean(process.env.NEXT_PUBLIC_TENCENT_MAP_KEY) },
     } });
   } catch {
-    return NextResponse.json({ data: { priceOptionsFen: [SHOP_GATE_PRICE_FEN, DISPLAY_PRICE_CAP_FEN], tags: TAGS, zones: fallbackZones, regions: SHENZHEN_REGION_CATALOG, map: { mode: 'demo', hasMapKey: false } } });
+    return NextResponse.json({ data: { priceOptionsFen: [SHOP_GATE_PRICE_FEN, DISPLAY_PRICE_CAP_FEN], tags: TAGS, zones: fallbackZones, regions: SHENZHEN_REGION_CATALOG, demoData: false, map: { mode: 'demo', hasMapKey: false } } });
   }
 }

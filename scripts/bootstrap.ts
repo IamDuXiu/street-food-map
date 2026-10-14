@@ -15,6 +15,7 @@ import { hashPassword } from '../lib/server/auth';
 import { openDatabase } from '../lib/server/db';
 import { formatPreflight, runPreflight } from '../lib/server/preflight';
 import { seedDemo } from '../lib/server/seed';
+import { seedNationalDemo } from '../lib/server/seed-national';
 import { seedRegions } from './seed-regions';
 import { loadLocalEnv } from './load-env';
 
@@ -70,5 +71,11 @@ if (process.env.SEED_DEMO === '0') {
   console.log('[bootstrap] SEED_DEMO=0，跳过演示数据。');
 } else {
   seedDemo(db);
-  console.log('[bootstrap] 演示数据已写入（如需空库启动请设 SEED_DEMO=0）。');
+  const national = seedNationalDemo(db);
+  console.log(
+    `[bootstrap] 演示数据已写入：深圳样板区 + 全国 ${national.areas} 个片区 / ${national.places} 家门店（如需空库启动请设 SEED_DEMO=0）。`,
+  );
+  console.log(
+    '[bootstrap] 演示门店不是真实店铺、价格均为示例；正式开放访问前请设 SEED_DEMO=0 并用干净的数据库。',
+  );
 }

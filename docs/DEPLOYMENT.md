@@ -17,7 +17,7 @@
 
 | 你的目标 | 需要准备 |
 |---|---|
-| 先跑起来看看（默认纸上地图，零凭据） | 只要一个 `ADMIN_PASSWORD`（否则后台无法登录） |
+| 先跑起来看看（默认纸上地图 + 5 城演示数据，零凭据） | 只要一个 `ADMIN_PASSWORD`（否则后台无法登录） |
 | 用腾讯真实底图 | 追加 `NEXT_PUBLIC_MAP_MODE=tencent` + 你自己的 JS API GL Key（绑定你的域名白名单） |
 | 后台自动把地址转坐标 | 追加 `TENCENT_MAP_WEB_SERVICE_KEY`（选填；不配就人工填坐标） |
 | 跑网页采集 | 追加 `MINIMAX_API_KEY`（选填；按你的账号计费） |
@@ -223,7 +223,8 @@ sudo systemctl restart street-food-map        # 或 docker compose up -d --build
 
 ## 上线检查清单
 
-- [ ] 已运行 `npm run preflight` 且没有 `✗` 配置错误
+- [ ] `SEED_DEMO=0`，且演示数据没有混进正式库（首页不应出现「演示数据」提示条）
+- [ ] `npm run preflight` 无 `✗` 配置错误（见 [CONFIGURATION.md](CONFIGURATION.md)）
 - [ ] 所有第三方凭据都是你自己账号申请的（腾讯地图 / 大模型），未借用他人 Key
 - [ ] `SESSION_SECRET` ≥32 字符随机值，未进 Git / 镜像层 / 日志
 - [ ] 用 `ADMIN_PASSWORD_HASH` 而非明文密码；明文的 `ADMIN_PASSWORD` 只在初始化时用过一次

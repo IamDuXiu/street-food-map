@@ -64,6 +64,8 @@ npm run admin:password     # 输出 ADMIN_PASSWORD_HASH=...
 
 **演示数据清理警告**：不要直接删除默认数据库、`uploads/` 或 `backups/`。先 `/admin/exports` 或 `npm run backup` 生成备份并校验，再用一个明确的**新** `DATA_DIR` / `UPLOADS_DIR` 跑正式数据；或由熟悉 SQLite 的人在停机后处理。误删时：停服务 → 保留现场 → 从备份恢复，不要继续写入。
 
+**注意**：把 `SEED_DEMO` 改回 `0` **不会删除已经写入的演示数据**（它只控制是否写入）。判断当前库有没有演示数据，最直接的办法是看首页有没有「演示数据」提示条；要彻底清干净，请换新的 `DATA_DIR`，或按上面的流程在停机后清理。
+
 ## 备份与恢复
 
 ```bash

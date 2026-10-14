@@ -102,7 +102,7 @@ docker compose logs app | head -40
 | `DATABASE_PATH` | `<DATA_DIR>/budget-map.sqlite` | SQLite 文件路径 |
 | `UPLOADS_DIR` | `uploads` / `/data/uploads` | 上传图片目录 |
 | `BACKUPS_DIR` | `backups` / `/data/backups` | 备份输出目录 |
-| `SEED_DEMO` | `1` | `1` 写入演示门店（本地体验）；`0` 只写区域目录（**生产建议**） |
+| `SEED_DEMO` | `1` | `1` 写入演示门店（本地体验，覆盖 5 城约 50 家，见 README「想看演示数据长什么样」）；`0` 只写区域目录，从空库开始（**生产必须设 0**）。演示门店不是真实店铺，存在时首页会显示演示提示 |
 | `HTTP_PORT` | `3000` | 仅供 `docker-compose.yml` 映射宿主机端口 |
 
 ## 常见场景

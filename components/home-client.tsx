@@ -58,6 +58,8 @@ export function HomeClient() {
   const [movedBbox, setMovedBbox] = useState<[number, number, number, number] | undefined>();
   const [catalog, setCatalog] = useState<ShenzhenRegionCatalog>(SHENZHEN_REGION_CATALOG);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  // 演示数据提示：由 /api/v1/config 在运行时告知，避免静态页在构建期把库状态烤进产物。
+  const [demoData, setDemoData] = useState(false);
   const [mobileListState, setMobileListState] = useState<MobileListState>('peek');
   const [requestVersion, setRequestVersion] = useState(0);
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -153,11 +155,12 @@ export function HomeClient() {
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/v1/config?city=${encodeURIComponent(cityId)}`)
-      .then((response) => response.ok ? response.json() as Promise<{ data?: { regions?: ShenzhenRegionCatalog; tags?: string[] } }> : Promise.reject(new Error('CONFIG_FAILED')))
+      .then((response) => response.ok ? response.json() as Promise<{ data?: { regions?: ShenzhenRegionCatalog; tags?: string[]; demoData?: boolean } }> : Promise.reject(new Error('CONFIG_FAILED')))
       .then((payload) => {
         if (cancelled) return;
         if (payload.data?.regions) setCatalog(payload.data.regions);
         if (payload.data?.tags?.length) setAvailableTags(payload.data.tags);
+        setDemoData(Boolean(payload.data?.demoData));
       })
       .catch(() => undefined);
     return () => { cancelled = true; };
@@ -264,6 +267,11 @@ export function HomeClient() {
 
   return (
     <main className={`${styles.homeShell} home-shell`}>
+      {demoData && (
+        <p className={styles.demoNotice} data-testid="demo-notice">
+          演示数据 · 这里的店铺与价格都是示例，不是真实核验结果。
+        </p>
+      )}
       <section className={styles.controlBar} aria-label="搜索和筛选">
         <div className={styles.searchRow}>
           <label className={styles.searchBox}>
