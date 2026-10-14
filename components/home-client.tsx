@@ -9,6 +9,7 @@ import { RegionPicker } from './region-picker';
 import styles from './home-client.module.css';
 import { Select } from '@/components/ui/Select';
 import { formatPrice, lowestMeal, prepareNearbyPlaces, withRegionDistance } from '@/lib/filter';
+import { useMobileSheetEnabled, useSheetGesture } from '@/lib/use-sheet-gesture';
 import { wgs84ToGcj02 } from '@/lib/geo';
 import {
   findShenzhenRegion,
@@ -39,6 +40,7 @@ function nearbyViewport(origin?: { lng: number; lat: number }, fallback: MapView
 
 type SortMode = 'distance' | 'price' | 'freshness';
 type MobileListState = 'peek' | 'half' | 'full';
+const MOBILE_LIST_STATES: MobileListState[] = ['peek', 'half', 'full'];
 
 export function HomeClient() {
   const [cheapOnly, setCheapOnly] = useState(true);
@@ -60,6 +62,10 @@ export function HomeClient() {
   const [requestVersion, setRequestVersion] = useState(0);
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const restoredRef = useRef(false);
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const resultsPanelRef = useRef<HTMLElement>(null);
+  const grabberRef = useRef<HTMLDivElement>(null);
+  const sheetEnabled = useMobileSheetEnabled();
 
   const selectedRegion = useMemo(() => regionId === 'nearby' ? null : (
     [catalog.city, ...catalog.districts.flatMap((item) => [item, ...item.businessAreas])]
@@ -76,6 +82,22 @@ export function HomeClient() {
   const selectedMeal = selected ? lowestMeal(selected) : undefined;
   const isPlannedRegion = selectedRegion?.coverage === 'planned';
   const effectiveSort = sort === 'distance' && !origin ? 'price' : sort;
+  const hasSelection = Boolean(!loading && selected);
+  // Snap heights mirror the sheet rules in home-client.module.css.
+  const sheetSnaps = (containerHeight: number) => [
+    hasSelection ? 180 : 64,
+    containerHeight * 0.48,
+    containerHeight - 8,
+  ];
+  const { dragging: sheetDragging, grabberProps } = useSheetGesture({
+    containerRef: layoutRef,
+    panelRef: resultsPanelRef,
+    grabberRef,
+    enabled: sheetEnabled,
+    index: MOBILE_LIST_STATES.indexOf(mobileListState),
+    snaps: sheetSnaps,
+    onChange: (index) => setMobileListState(MOBILE_LIST_STATES[index] ?? 'peek'),
+  });
 
   // Restore non-location UI state when returning from a place detail page.
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -271,8 +293,9 @@ export function HomeClient() {
         {locationMessage && <p className={styles.locationNotice} role="status">◎ {locationMessage}</p>}
       </section>
 
-      <div className={`${styles.homeLayout} home-layout`}>
-        <section className={`${styles.resultsPanel} results-panel ${styles[`sheet-${mobileListState}`]} ${!loading && selected ? styles.hasSelection : ''}`} aria-live="polite" aria-busy={loading}>
+      <div className={`${styles.homeLayout} home-layout`} ref={layoutRef}>
+        <section ref={resultsPanelRef} className={`${styles.resultsPanel} results-panel ${styles[`sheet-${mobileListState}`]} ${sheetDragging ? styles.sheetDragging : ''} ${!loading && selected ? styles.hasSelection : ''}`} aria-live="polite" aria-busy={loading}>
+          <div className={styles.sheetGrabber} ref={grabberRef} aria-hidden="true" {...grabberProps} />
           {!isPlannedRegion && <RecentStrip />}
           <div className={styles.resultsHeading}>
             <div>
