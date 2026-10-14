@@ -26,9 +26,14 @@ function testDb() {
   seedDemo(db);
   return db;
 }
+// 合成夹具（43 条记录 / 32 个来源 URL 分组），不含任何真实门店、价格或链接。
+// 需要用真实线索文件跑时：CANDIDATE_POOL_FIXTURE=/path/to/consolidated.json npm test
+const fixturePath =
+  process.env.CANDIDATE_POOL_FIXTURE ??
+  'tests/fixtures/candidate-pool-consolidated.json';
 function records() {
   return JSON.parse(
-    fs.readFileSync('tmp/nanshan-leads/consolidated.json', 'utf8'),
+    fs.readFileSync(fixturePath, 'utf8'),
   ) as { records: Array<Record<string, unknown>> };
 }
 function candidateEntry(

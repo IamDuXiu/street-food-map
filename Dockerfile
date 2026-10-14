@@ -48,6 +48,8 @@ COPY db ./db
 COPY lib ./lib
 COPY scripts ./scripts
 COPY docker ./docker
+# 从 ZIP 下载或 Windows 检出的仓库可能丢掉可执行位；入口脚本必须可执行。
+RUN chmod +x /app/docker/entrypoint.sh
 COPY README.md LICENSE ./
 
 USER node
