@@ -17,8 +17,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 22 = 项目基线（.nvmrc / Dockerfile）; 24 = 下一代 LTS，提前发现不兼容
-        node: [22, 24]
+        # 只跑项目基线（.nvmrc / Dockerfile / engines 都是 22）。
+        # 曾把 24 也放进矩阵，结果发现 vitest 2 的 worker（tinypool）在 Node 24 下
+        # 直接 "Worker exited unexpectedly"，与本项目代码无关：见 issues/#10
+        # （升级 vitest 后再把 24 加回来）。
+        node: [22]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
