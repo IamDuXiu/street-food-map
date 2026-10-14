@@ -50,6 +50,7 @@ npm run test:e2e
 - **安全**：写操作走 `requireAdmin(request, db, true)` + Origin/CSRF 校验 + `recordAudit`；密钥只走环境变量；公开 DTO 不得泄露来源 URL、审核备注、审计记录、原始 payload、文件路径。
 - **视觉**：遵循 `docs/UI-GUIDELINES.md`（浅色 foundation、票据式排版、按下反馈）。手势驱动的动效走 `lib/motion.ts` 的弹簧，不要用固定时长动画重造。
 - **交互不变量**：正在入场或退场的浮层不得吞掉下一次交互（退场遮罩必须 `pointer-events: none`）。
+- **测试**：不得读取 `tmp/`、`outputs/`、`data/`、`backups/` 等被忽略目录——CI 在全新克隆上跑，这类依赖只在你本机能过。需要样本数据请放进 `tests/fixtures/`，且必须是**构造数据**（不含真实门店、价格、链接）。
 - TypeScript strict，提交前 Prettier 格式化。
 
 ## 数据类贡献（重要）

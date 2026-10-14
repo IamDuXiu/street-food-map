@@ -59,7 +59,7 @@
 - [x] 统一公共/后台头部与后台浅灰侧栏；移除站点头部 `SHENZHEN / 01` 与演示旧标签，登录侧栏隐藏、蜜罐可靠离屏、loading 壳稳定。
 - [x] 更新首页/最近核验条关键辅助文字可读性；地图 SDK 容器与腾讯 logo 未触碰。
 
-交接合同详见 [`docs/UI_GUIDELINES.md`](./UI_GUIDELINES.md)。详情/投稿/后台页面仍由对应页面 agent 做最终截图微调。
+交接合同详见 [`docs/UI-GUIDELINES.md`](../UI-GUIDELINES.md)（归档时该文件已改名，原为 `UI_GUIDELINES.md`）。详情/投稿/后台页面仍由对应页面 agent 做最终截图微调。
 
 更新时间：2026-09-11（首页/详情可用性优化 8 项完成）
 
