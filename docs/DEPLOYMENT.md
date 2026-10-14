@@ -244,7 +244,7 @@ sudo systemctl restart street-food-map        # 或 docker compose up -d --build
 | 后台登录失败 | 密码是否与初始化时一致；`SESSION_SECRET` 是否 ≥32 字符且跨重启稳定 |
 | 地图显示成了内置地图 | 这是无 Key / 加载失败时的正常降级；检查 `NEXT_PUBLIC_MAP_MODE` 是否在**构建期**就设为 `tencent` 且 `NEXT_PUBLIC_TENCENT_MAP_KEY` 是你自己的 Key（`npm run preflight` 会直接告诉你缺哪一项） |
 | 日志开头出现 `✗` 开头的配置错误 | 按该行 `↳` 提示修正后重启；`✗` 表示配置自相矛盾（例如选了腾讯底图却没有 Key、`SESSION_SECRET` 太短、数据目录不可写） |
-| 后台打不开 / 登录不了 | 先看是否设置了 `ADMIN_PASSWORD`（`preflight` 会报 `!` 警告：站点能跑但后台不可用） |
+| 后台打不开 / 登录不了 | 先看是否设置了 `ADMIN_PASSWORD`（`preflight` 会报 `!` 警告：站点能跑但后台不可用）。若登录页提示「本实例还没有设置管理员密码」，就是这一项没配；该提示不会计入失败锁定，填上后重启即可 |
 | 腾讯底图不生效、Key 像是没用 | `NEXT_PUBLIC_*` 在构建期内联：改完必须重新 build（`docker compose up -d --build`）；另外确认 Key 在腾讯控制台绑定了**你自己的域名**白名单 |
 | 投稿写操作被拒 | 反向代理是否改写了 `Host` / `Origin` |
 | 投稿图片上传失败 | 只接受 JPEG/PNG/WebP，单张 ≤10MB，每投稿 ≤5 张；服务端会重编码为 WebP |
