@@ -1,8 +1,13 @@
 # 街头饭签 · 一键自托管
 #
-#   cp .env.example .env    # 取消注释并填写 ADMIN_PASSWORD / SESSION_SECRET
+#   cp .env.example .env    # 取消注释并填写 ADMIN_PASSWORD；想用真实底图/采集再填对应 Key
 #   docker compose up -d
 #   open http://localhost:3000
+#
+# 第三方凭据（NEXT_PUBLIC_TENCENT_MAP_KEY、TENCENT_MAP_WEB_SERVICE_KEY、MINIMAX_API_KEY）
+# 必须是部署者本人账号申请的值：仓库与镜像里不包含任何 Key，借来的 Key 也会因域名/IP
+# 白名单与计费归属而不可用。缺失后果见 .env.example 的注释与 docs/CONFIGURATION.md。
+# 部署前自查：npm run preflight（容器日志开头也会打印同一份清单）。
 #
 # 数据（SQLite、上传图片、备份）都存在命名卷 street-food-map-data 的 /data 下，
 # 容器重建不会丢。NEXT_PUBLIC_* 需要在构建期注入，所以同时出现在 build.args 与 environment。

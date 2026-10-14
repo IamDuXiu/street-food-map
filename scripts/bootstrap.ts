@@ -13,8 +13,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { hashPassword } from '../lib/server/auth';
 import { openDatabase } from '../lib/server/db';
+import { formatPreflight, runPreflight } from '../lib/server/preflight';
 import { seedDemo } from '../lib/server/seed';
 import { seedRegions } from './seed-regions';
+import { loadLocalEnv } from './load-env';
+
+// 容器里环境变量来自 compose；本机 / systemd 直接跑时补读 .env 与 .env.local。
+loadLocalEnv();
 
 function envDir(name: string, fallback: string) {
   const value = process.env[name]?.trim();
@@ -26,12 +31,11 @@ const uploadsDir = envDir('UPLOADS_DIR', path.join(dataDir, 'uploads'));
 const backupsDir = envDir('BACKUPS_DIR', path.join(dataDir, 'backups'));
 for (const dir of [dataDir, uploadsDir, backupsDir]) fs.mkdirSync(dir, { recursive: true });
 
-const secret = process.env.SESSION_SECRET?.trim();
-if (!secret || secret.length < 32) {
-  console.warn(
-    '[bootstrap] 警告：SESSION_SECRET 缺失或短于 32 字符，后台登录会失败。容器部署时由 docker/entrypoint.sh 自动生成。',
-  );
-}
+// 凭据自查：只报告不阻塞。第三方凭据（腾讯地图 / 大模型）必须由部署者自己提供，
+// 缺了什么、缺了会怎样，都在这里说清楚（`npm run preflight` 是严格版，会 exit 1）。
+console.log('');
+console.log(formatPreflight(runPreflight({ dataDir })));
+console.log('');
 
 // 打开数据库即应用迁移（幂等）。
 const db = openDatabase();

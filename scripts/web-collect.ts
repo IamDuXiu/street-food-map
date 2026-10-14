@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { BUDGET_PRICE_YUAN, CITIES } from '../lib/cities';
 import { creatorImportRecordSchema } from '../lib/server/creator-import';
 import { stripHtml } from './creator-collect';
+import { loadLocalEnv } from './load-env';
 
 /**
  * Search-engine web collector.
@@ -534,17 +535,6 @@ export async function collectWebLeads(
   };
 }
 
-function loadLocalEnv(file = '.env.local'): void {
-  if (!fs.existsSync(file)) return;
-  const text = fs.readFileSync(file, 'utf8');
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match && !process.env[match[1]]) {
-      process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
-    }
-  }
-}
-
 export async function runWebCollectCli(
   argv = process.argv.slice(2),
 ): Promise<void> {
@@ -618,6 +608,8 @@ export async function runWebCollectCli(
 
 const currentFile = fileURLToPath(import.meta.url);
 if (process.argv[1] && path.resolve(process.argv[1]) === currentFile) {
+  // 命令行入口：允许把 MINIMAX_API_KEY 等凭据放在项目根目录的 .env / .env.local。
+  loadLocalEnv();
   runWebCollectCli().catch((error) => {
     console.error(error instanceof Error ? error.message : error);
     process.exitCode = 1;

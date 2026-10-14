@@ -9,6 +9,7 @@
 ```bash
 npm install
 ADMIN_PASSWORD='请替换为强密码' npm run setup   # 建库 + 迁移 + 区域目录 + 演示数据
+npm run preflight                              # 凭据自查：缺什么、缺了会怎样
 npm run dev
 ```
 
@@ -16,6 +17,8 @@ npm run dev
 - 后台：<http://localhost:3000/admin/login>
 
 `setup` 会幂等创建/升级 `data/budget-map.sqlite`、`uploads/`、`backups/`，并把随机会话密钥写入 `.env.local`。**不要把 `.env.local`、数据库、备份发给别人。**
+
+腾讯地图 Key、大模型 Key 这类第三方凭据必须是你自己账号申请的值：仓库不内置任何 Key，`npm run preflight` 会逐项告诉你**当前配了什么、缺什么、缺了哪个功能会降级**（只看长度，不回显凭据内容）。
 
 改密码（不落 shell 历史）：
 

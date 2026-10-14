@@ -21,7 +21,10 @@
 
 这个项目默认假设运行在**可信的本地或自托管环境**，公开到公网前请至少确认：
 
+- [ ] 已运行 `npm run preflight`，没有 `✗` 配置错误
+- [ ] 所有密钥经环境变量注入，Git 与镜像层无明文
 - [ ] `SESSION_SECRET` 是 ≥32 字符的随机值，且没有进 Git / 镜像层 / 日志
+- [ ] 第三方凭据（腾讯地图 Key、大模型 Key）都是部署者本人账号申请的，未借用他人 Key
 - [ ] 后台密码经 `npm run admin:password` 生成哈希后使用，明文的 `ADMIN_PASSWORD` 只在初始化时用一次
 - [ ] HTTPS 已启用（Cookie 与浏览器定位都需要安全上下文）
 - [ ] 反向代理不会改写 `Origin` / `Host`；只有确认代理会**剥离**客户端自带的 `X-Forwarded-For` 时才设 `TRUST_PROXY=1`

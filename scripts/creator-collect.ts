@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUDGET_PRICE_YUAN, CITIES, type CityDefinition } from '../lib/cities';
+import { loadLocalEnv } from './load-env';
 
 /**
  * Creator content collector (PLAN-CREATOR-DATA.md §6 layer A).
@@ -726,17 +727,6 @@ export function mergeCollectRecords(
 }
 
 /* ------------------------------------------------------------------- cli -- */
-
-function loadLocalEnv(file = '.env.local'): void {
-  if (!fs.existsSync(file)) return;
-  const text = fs.readFileSync(file, 'utf8');
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match && !process.env[match[1]]) {
-      process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, '');
-    }
-  }
-}
 
 interface ParsedArgs {
   keywords: string[];

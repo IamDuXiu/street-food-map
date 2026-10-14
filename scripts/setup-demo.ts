@@ -4,13 +4,16 @@ import { openDatabase } from '../lib/server/db';
 import { seedDemo } from '../lib/server/seed';
 import { seedRegions } from './seed-regions';
 import { hashPassword, verifyPassword } from '../lib/server/auth';
+import { formatPreflight, runPreflight } from '../lib/server/preflight';
+import { loadLocalEnv } from './load-env';
 import { randomBytes } from 'node:crypto';
 
+// 与 Next.js 一致地读取 .env / .env.local（已存在的进程环境变量优先）。
+loadLocalEnv();
 const envPath = path.resolve('.env.local');
 let localEnv = '';
 try {
   localEnv = fs.readFileSync(envPath, 'utf8');
-  for (const line of localEnv.split(/\r?\n/)) { const match = line.match(/^([A-Z0-9_]+)=(.*)$/); if (match && !process.env[match[1]]) process.env[match[1]] = match[2].replace(/^['"]|['"]$/g, ''); }
 } catch {}
 if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
   const generatedSecret = randomBytes(32).toString('base64url');
@@ -33,3 +36,8 @@ if (configuredHash) db.prepare('INSERT INTO admin_settings(id,password_hash,pass
 console.log('Demo environment ready: SQLite migrated and demo seed is idempotent.');
 console.log(configuredHash ? 'Admin password configured from local environment.' : 'Admin password not configured; run npm run admin:password and set ADMIN_PASSWORD_HASH or ADMIN_PASSWORD before login.');
 console.log('DemoMapAdapter is active; no account or map key is needed.');
+console.log('');
+// 部署前凭据自查：说明哪些第三方凭据需要你自己的账号、缺了会怎样。只报告不阻塞。
+console.log(formatPreflight(runPreflight()));
+console.log('');
+console.log('提示：正式部署前先跑 `npm run preflight`（严格模式，缺必需项会失败）。');

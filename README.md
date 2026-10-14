@@ -8,7 +8,7 @@
 
 给想在 30 秒内找到一顿便宜、能吃饱、价格有据可查的饭的人用。数据是按「具体餐食 + 具体价格 + 具体核验日期」存的，不是人均消费估算，也不收录一次性优惠价。
 
-> 这是一个**可以直接自己部署运行**的开源项目：一条命令拉起服务，自带演示数据，不需要任何第三方账号或付费 Key（地图默认使用内置的纸上地图）。
+> 这是一个**可以直接自己部署运行**的开源项目：一条命令拉起服务，自带演示数据。**不需要任何第三方账号或付费 Key 也能跑起来**（地图默认是内置的纸上地图）；只有想用腾讯真实底图或自动采集时，才需要填入**你自己账号**申请的 Key。
 
 <p align="center">
   <img src="docs/images/home-desktop.png" alt="桌面端：左侧价格结果列表，右侧地图" width="820">
@@ -36,11 +36,48 @@
 
 ---
 
+## 部署前须知道：第三方凭据要你自己准备
+
+本项目的第三方服务凭据（腾讯地图 Key、大模型 Key）**必须由你本人申请**。仓库与镜像里不包含任何 Key，也没有供大家共用的公共 Key——可以自己验证：
+
+```bash
+git grep -nIE "TENCENT_MAP.*KEY\s*=\s*\S|MINIMAX_API_KEY\s*=\s*\S"   # 无输出即为干净
+```
+
+**借用别人的 Key 通常也走不通**：腾讯位置服务的 Key 可以在控制台绑定**你自己的域名白名单**（浏览器端）或 **IP 白名单**（服务端）；大模型 Key 的调用量计入申请者账号的账单与配额，共享会同时带来费用与封号风险。
+
+### 什么功能需要什么凭据
+
+| 功能 | 需要的凭据 | 不配置的后果 |
+|---|---|---|
+| 前台地图（**默认**） | 无 | 使用内置「纸上地图」，不需要网络与账号 |
+| 前台腾讯真实底图 | `NEXT_PUBLIC_MAP_MODE=tencent` + `NEXT_PUBLIC_TENCENT_MAP_KEY`（你自己申请，绑定你的域名白名单） | 安全回退为内置纸上地图（`preflight` 会报配置错误） |
+| 后台登录与审核 | `ADMIN_PASSWORD` 或 `ADMIN_PASSWORD_HASH` | 前台照常工作，但 `/admin` 无法登录、投稿无法审核 |
+| 后台地址 → 坐标自动地理编码 | `TENCENT_MAP_WEB_SERVICE_KEY`（选填，可绑 IP 白名单） | 改为人工填写 / 点选坐标，功能不受影响 |
+| `npm run collect:web` 网页采集 | `MINIMAX_API_KEY`（按你的账号计费） | 该采集脚本不可用，站点运行不受影响 |
+| `npm run collect:creators` B站采集 | `BILIBILI_COOKIE`（选填） | 仍可匿名抓取，只是更容易遇到限流 |
+
+### 怎么配置
+
+只有一个配置文件：**项目根目录的 `.env`**（从 `.env.example` 复制）。Next.js、`docker compose` 与 `scripts/` 下的脚本（含 `preflight` 与采集脚本）都会读它；已导出的进程环境变量优先级最高。
+
+```bash
+cp .env.example .env
+# 取消注释并填写；至少要设置 ADMIN_PASSWORD
+npm run preflight          # 部署前自查：缺什么、缺了会怎样，都在这里说清楚
+```
+
+照 `.env.example` 里的注释逐项填写即可：**要不要用真实底图、要不要跑采集**决定了你还需不需要额外申请 Key。填错了不用猜——`npm run preflight` 会直接把后果和修法列出来；容器启动时也会在日志开头打印同一份清单（`docker compose logs app`）。
+
+---
+
 ## 快速开始
 
-两种方式，选一种即可。所有配置都是可选的（**不配也能跑**，只是地图用内置的纸上地图）；生产环境记得设置管理员密码。
+两种方式，选一种即可。所有配置都是可选的（**不配也能跑**，只是地图用内置的纸上地图）；生产环境记得设置管理员密码，正式上线前先跑一次 `npm run preflight`。
 
 ### 方式 A：Docker Compose（推荐，最省事）
+
+> 忘了准备凭据也没关系：容器日志开头会打印一份凭据清单，`npm run preflight` 也能随时自查。
 
 ```bash
 git clone https://github.com/IamDuXiu/street-food-map.git
@@ -84,7 +121,7 @@ npm run start
 
 ## 配置
 
-所有配置都通过环境变量提供，完整说明见 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)。最小可用集合：
+所有配置都写在**项目根目录的 `.env`**（从 [`.env.example`](.env.example) 复制），完整说明见 [docs/CONFIGURATION.md](docs/CONFIGURATION.md)；`npm run preflight` 会逐项报告你当前的配置状态。最小可用集合：
 
 | 变量 | 用途 | 默认 |
 |---|---|---|
@@ -101,7 +138,7 @@ npm run start
 
 - `NEXT_PUBLIC_*` 会被 Next.js 在**构建期**内联，Docker 部署时必须在 build 阶段提供（`docker-compose.yml` 已接好 `build.args`），运行时再改无效。
 - `SEED_DEMO=0` 用于生产：只写区域目录、不写演示门店。
-- 密钥只放在环境变量或 `.env`（已被 `.gitignore` 忽略），**不要提交**。
+- 第三方凭据（腾讯地图 / 大模型）必须是你自己账号申请的值，**仓库不内置任何 Key**；凭据只写进 `.env`（已被 `.gitignore` 忽略），**不要提交**。
 
 ---
 
@@ -147,6 +184,7 @@ npm run dev            # 本地开发
 npm run build          # 生产构建
 npm run start          # 生产启动
 npm run setup          # 建库 + 全量迁移 + 区域目录 + 演示数据
+npm run preflight      # 部署前凭据自查（缺必需项会以退出码 1 结束）
 npm run admin:password # 生成 ADMIN_PASSWORD_HASH（不落 shell 历史）
 npm run backup         # 生成一致性备份 ZIP（含 manifest + SHA-256）
 npm run restore -- --from backups/<file>.zip --confirm RESTORE-BUDGET-MAP
