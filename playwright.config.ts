@@ -21,7 +21,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'tsx scripts/setup-e2e.ts && npm run setup && npm run build && npm run start -- --hostname 127.0.0.1 --port 3100',
-    env: { DEMO_AUTH: '1', DEMO_ADMIN_PASSWORD: 'phase1-demo-password', ADMIN_PASSWORD: 'phase1-demo-password', SESSION_SECRET: 'playwright-session-secret-012345678901234567890', DATABASE_PATH: '/tmp/shenzhen-budget-map-playwright/budget-map.sqlite', DATA_DIR: '/tmp/shenzhen-budget-map-playwright', UPLOADS_DIR: '/tmp/shenzhen-budget-map-playwright/uploads', BACKUPS_DIR: '/tmp/shenzhen-budget-map-playwright/backups', NEXT_PUBLIC_MAP_MODE: 'demo' },
+    env: { ADMIN_PASSWORD: 'phase1-demo-password', SESSION_SECRET: 'playwright-session-secret-012345678901234567890', DATABASE_PATH: '/tmp/shenzhen-budget-map-playwright/budget-map.sqlite', DATA_DIR: '/tmp/shenzhen-budget-map-playwright', UPLOADS_DIR: '/tmp/shenzhen-budget-map-playwright/uploads', BACKUPS_DIR: '/tmp/shenzhen-budget-map-playwright/backups', NEXT_PUBLIC_MAP_MODE: 'demo' },
     url: 'http://127.0.0.1:3100',
     reuseExistingServer: false,
     timeout: 120_000

@@ -123,8 +123,7 @@ export function requireAdmin(
   const setting = db
     .prepare('SELECT password_version FROM admin_settings WHERE id=1')
     .get() as { password_version: number } | undefined;
-  const currentVersion =
-    setting?.password_version ?? (process.env.DEMO_AUTH === '1' ? 1 : 0);
+  const currentVersion = setting?.password_version ?? 0;
   if (
     !currentVersion ||
     !verifySession(request.cookies.get(COOKIE)?.value, currentVersion)

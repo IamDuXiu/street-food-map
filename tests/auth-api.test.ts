@@ -27,6 +27,22 @@ describe('admin authentication API', () => {
     }
     expect((db.prepare('SELECT count(*) c FROM login_attempts').get() as { c: number }).c).toBe(0);
   });
+  it('环境变量无法绕过密码（历史 DEMO_AUTH 后门已移除）', async () => {
+    process.env.DEMO_AUTH = '1';
+    process.env.DEMO_ADMIN_PASSWORD = 'attacker-password';
+    const init = { method: 'POST', headers: { 'content-type': 'application/json', 'user-agent': 'auth-backdoor-test' }, body: JSON.stringify({ username: 'admin', password: 'attacker-password' }) };
+    // 库里没有管理员时：明确说「没配置」，绝不放行
+    const notConfigured = await sessionPost(request('/api/v1/admin/session', init));
+    expect(notConfigured.status).toBe(503);
+    expect((await notConfigured.json()).error.code).toBe('ADMIN_NOT_CONFIGURED');
+    // 库里有管理员时：环境变量里的「演示密码」必须无效
+    db.prepare('INSERT INTO admin_settings(id,password_hash,password_version,updated_at) VALUES (1,?,?,?)').run(hashPassword('correct-password'), 1, new Date().toISOString());
+    const wrong = await sessionPost(request('/api/v1/admin/session', init));
+    expect(wrong.status).toBe(401);
+    expect((await wrong.json()).error.code).toBe('INVALID_CREDENTIALS');
+    delete process.env.DEMO_AUTH;
+    delete process.env.DEMO_ADMIN_PASSWORD;
+  });
   it('管理写操作没有 CSRF 返回 403', async () => { db.prepare('INSERT INTO admin_settings(id,password_hash,password_version,updated_at) VALUES (1,?,?,?)').run(hashPassword('correct-password'), 1, new Date().toISOString()); const response = await placePost(request('/api/v1/admin/places', { method: 'POST', headers: { cookie: `budget_admin_session=${issueSession(1)}`, 'content-type': 'application/json', origin: 'http://localhost' }, body: JSON.stringify({}) })); expect(response.status).toBe(403); });
   it('写操作必须有同源 Origin，PATCH 禁止未知列名', async () => { db.prepare('INSERT INTO admin_settings(id,password_hash,password_version,updated_at) VALUES (1,?,?,?)').run(hashPassword('correct-password'), 1, new Date().toISOString()); const csrf = 'csrf-token-0123456789012345'; const cookie = `budget_admin_session=${issueSession(1)}; budget_csrf=${csrf}`; const missingOrigin = await placePatch(request('/api/v1/admin/places/kexing-b1-foodcourt', { method: 'PATCH', headers: { cookie, 'content-type': 'application/json', 'x-csrf-token': csrf }, body: JSON.stringify({ name: '新名称' }) }), { params: Promise.resolve({ id: 'kexing-b1-foodcourt' }) }); expect(missingOrigin.status).toBe(403); const crossOrigin = await placePatch(request('/api/v1/admin/places/kexing-b1-foodcourt', { method: 'PATCH', headers: { cookie, origin: 'https://evil.example', host: 'localhost', 'content-type': 'application/json', 'x-csrf-token': csrf }, body: JSON.stringify({ name: '新名称' }) }), { params: Promise.resolve({ id: 'kexing-b1-foodcourt' }) }); expect(crossOrigin.status).toBe(403); const unknownKey = await placePatch(request('/api/v1/admin/places/kexing-b1-foodcourt', { method: 'PATCH', headers: { cookie, origin: 'http://localhost', host: 'localhost', 'content-type': 'application/json', 'x-csrf-token': csrf }, body: JSON.stringify({ unexpectedColumn: 'drop' }) }), { params: Promise.resolve({ id: 'kexing-b1-foodcourt' }) }); expect(unknownKey.status).toBe(400); });
   it('过期或损坏会话不能访问，退出会清除会话', async () => { db.prepare('INSERT INTO admin_settings(id,password_hash,password_version,updated_at) VALUES (1,?,?,?)').run(hashPassword('correct-password'), 1, new Date().toISOString()); const session = issueSession(1); vi.useFakeTimers(); vi.advanceTimersByTime(8 * 3600000 + 1); expect((await sessionGet(request('/api/v1/admin/session', { headers: { cookie: `budget_admin_session=${session}` } }))).status).toBe(401); vi.useRealTimers(); const csrf = 'csrf-test-0123456789012345'; const response = await sessionDelete(request('/api/v1/admin/session', { method: 'DELETE', headers: { cookie: `budget_admin_session=${issueSession(1)}; budget_csrf=${csrf}`, origin: 'http://localhost', host: 'localhost', 'x-csrf-token': csrf } })); expect(response.status).toBe(200); expect(response.headers.get('set-cookie')).toContain('budget_admin_session='); });

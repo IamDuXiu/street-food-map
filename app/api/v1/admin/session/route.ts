@@ -49,17 +49,17 @@ export async function POST(request: NextRequest) {
     const attempt = db.prepare('SELECT * FROM login_attempts WHERE source_hash=?').get(source) as { failed_count: number; first_failed_at: string | null; locked_until: string | null } | undefined;
     if (attempt?.locked_until && new Date(attempt.locked_until) > now) return responseForFailure(request, 'LOGIN_LOCKED', '登录失败次数过多，请 15 分钟后重试', 429);
     const setting = db.prepare('SELECT password_hash,password_version FROM admin_settings WHERE id=1').get() as { password_hash: string; password_version: number } | undefined;
-    const demoPassword = process.env.DEMO_AUTH === '1' ? process.env.DEMO_ADMIN_PASSWORD : undefined;
+    // 登录只认库里的哈希：不提供任何环境变量后门（测试一律走 ADMIN_PASSWORD 写入的哈希）。
     // 还没有管理员密码时不要说「账号或密码不正确」：那会把「部署时没配」误导成「输错了」，
     // 而且失败次数会把部署者自己锁 15 分钟。明确告诉他缺什么、怎么补。
-    if (!setting?.password_hash && !demoPassword)
+    if (!setting?.password_hash)
       return responseForFailure(
         request,
         'ADMIN_NOT_CONFIGURED',
         '本实例还没有设置管理员密码。请设置 ADMIN_PASSWORD（或用 npm run admin:password 生成 ADMIN_PASSWORD_HASH）后重启服务；该提示不计入登录失败次数。',
         503,
       );
-    const validPassword = Boolean(setting?.password_hash && verifyPassword(password, setting.password_hash)) || Boolean(demoPassword && password === demoPassword);
+    const validPassword = Boolean(setting.password_hash && verifyPassword(password, setting.password_hash));
     if (username !== adminUsername() || !validPassword) {
       const withinWindow = Boolean(attempt?.first_failed_at && new Date(attempt.first_failed_at).getTime() > now.getTime() - 900000);
       const first = withinWindow ? attempt!.first_failed_at! : now.toISOString();
